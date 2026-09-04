@@ -66,7 +66,7 @@ flowchart TD
     subgraph gp ["gutportrait — this repository"]
         E["HARMONISE<br/>Greengenes2 placement · genus collapse · CLR"]
         F["INTEGRATE<br/>PERMANOVA variance partition · MMUPHin"]
-        G{{"GATES<br/>positive control + batch dominance"}}
+        G{"GATES<br/>positive control + batch dominance"}
         H["POSITION<br/>matched cohort · percentiles ·<br/>enterosignatures · lifestyle strata"]
         I["DEVIATE<br/>extremes-only flags"]
         J["REPORT<br/>every number graded"]
