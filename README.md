@@ -87,12 +87,29 @@ ampliseq's published outputs and never touches a FASTQ:
 | `dada2/ASV_table.tsv`, `ASV_seqs.fasta` | ASV-level input, phylogenetic placement |
 | `dada2/ASV_tax.*.tsv` | taxonomy, genus collapse |
 | `qiime2/abundance_tables/feature-table.biom` | count matrix |
-| `qiime2/rel_abundance_tables/rel-table-*.tsv` | rank-level relative abundance |
+| `qiime2/rel_abundance_tables/rel-table-*.tsv` | rank-level relative abundance — **see the rank-numbering caveat below** |
 | `phyloseq/*.rds`, `treesummarizedexperiment/*.rds` | direct input to the R modules |
 | `qiime2/phylogenetic_tree/tree.nwk` | phylogenetic diversity |
 
 Because the boundary is ampliseq's own published output, **you can run gutportrait on any
 ampliseq results directory** — not just ones produced by this project.
+
+> ### ⚠ Rank numbering depends on the taxonomy database
+>
+> `rel-table-N.tsv` is numbered by *column position* in the taxonomy string, not by rank
+> name. **SBDI-GTDB emits both a `Domain` and a `Kingdom` column** (both `Bacteria`), which
+> shifts every rank down by one relative to SILVA. ampliseq only writes tables 2–6, so with
+> SBDI-GTDB:
+>
+> | table | SILVA | SBDI-GTDB |
+> |---|---|---|
+> | `rel-table-6` | Genus | **Family** |
+> | genus | `rel-table-6` | **not emitted** |
+>
+> gutportrait therefore does **not** read a pre-made genus table. It collapses to genus
+> itself from `dada2/ASV_tax_species.*.tsv` (or the `phyloseq` object's `tax_table`, which
+> carries named ranks and is immune to this) joined to the ASV table. Verified empirically
+> on ampliseq 2.18.0 with `--dada_ref_taxonomy sbdi-gtdb`.
 
 ---
 
