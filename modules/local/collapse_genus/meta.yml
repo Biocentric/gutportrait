@@ -1,0 +1,66 @@
+name: "collapse_genus"
+description: Collapse an ampliseq ASV table to genus-level counts using named rank columns
+keywords:
+  - microbiome
+  - 16S
+  - taxonomy
+  - genus
+tools:
+  - "pandas":
+      description: "Powerful data structures for data analysis in Python"
+      homepage: "https://pandas.pydata.org"
+      documentation: "https://pandas.pydata.org/docs/"
+      licence: ["BSD-3-Clause"]
+      identifier: ""
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information, e.g. `[ id:'personal' ]`
+    - asv_table:
+        type: file
+        description: |
+          ampliseq `dada2/ASV_table.tsv` -- an ASV_ID column plus one column per sample.
+        pattern: "*.tsv"
+    - taxonomy:
+        type: file
+        description: |
+          ampliseq `dada2/ASV_tax_species.<db>.tsv`. Must carry NAMED rank columns
+          (Domain/Phylum/.../Genus). Do not substitute a positional
+          `rel_abundance_tables/rel-table-N.tsv` file: those are numbered by column
+          position in the taxonomy string, so the rank a given number refers to changes
+          with the reference database. Under SBDI-GTDB, which emits both Domain and
+          Kingdom, `rel-table-6` is Family and no genus table is written at all.
+        pattern: "*.tsv"
+
+output:
+  counts:
+    - - meta:
+          type: map
+          description: Groovy Map containing sample information
+      - "*.genus_counts.tsv":
+          type: file
+          description: Genus-by-sample count matrix. Includes an `Unassigned` row.
+          pattern: "*.genus_counts.tsv"
+  stats:
+    - - meta:
+          type: map
+          description: Groovy Map containing sample information
+      - "*.collapse_stats.tsv":
+          type: file
+          description: |
+            Per-sample total reads, unassigned reads, unassigned fraction and taxa count.
+            The unassigned fraction is a QC signal, not bookkeeping: it is large enough to
+            change the interpretation of every downstream percentile and must be reported.
+          pattern: "*.collapse_stats.tsv"
+  versions:
+    - "versions.yml":
+        type: file
+        description: File containing software versions
+        pattern: "versions.yml"
+
+authors:
+  - "@Biocentric"
+maintainers:
+  - "@Biocentric"
