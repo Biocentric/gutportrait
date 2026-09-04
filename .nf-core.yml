@@ -1,0 +1,49 @@
+repository_type: pipeline
+
+nf_core_version: 4.1.0
+
+lint:
+  files_unchanged:
+    - docs/CONTRIBUTING.md
+    - CODE_OF_CONDUCT.md
+    - assets/nf-core-gutportrait_logo_light.png
+    - docs/images/nf-core-gutportrait_logo_light.png
+    - docs/images/nf-core-gutportrait_logo_dark.png
+    - .github/ISSUE_TEMPLATE/bug_report.yml
+    - .github/PULL_REQUEST_TEMPLATE.md
+    - assets/email_template.txt
+    - docs/README.md
+  nextflow_config:
+    - manifest.name
+    - manifest.homePage
+  multiqc_config:
+    - report_comment
+  files_exist:
+    - conf/igenomes.config
+    - conf/igenomes_ignored.config
+    - CODE_OF_CONDUCT.md
+    - assets/nf-core-gutportrait_logo_light.png
+    - docs/images/nf-core-gutportrait_logo_light.png
+    - docs/images/nf-core-gutportrait_logo_dark.png
+    - .github/ISSUE_TEMPLATE/config.yml
+    - .github/workflows/awstest.yml
+    - .github/workflows/awsfulltest.yml
+
+template:
+  org: Biocentric
+  name: gutportrait
+  description: Cross-cohort comparison of personal 16S gut microbiome profiles against
+    co-processed reference panels
+  author: Sander (Biocentric)
+  version: 1.0.0dev
+  force: true
+  outdir: /tmp/gpbuild/gutportrait
+  skip_features:
+    - igenomes
+    - fastqc
+    - gitpod
+    - codespaces
+    - slackreport
+    - adaptivecard
+    - seqera_platform
+  is_nfcore: false
