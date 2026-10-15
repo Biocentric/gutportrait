@@ -63,15 +63,15 @@ The calculation:
 4. For each genus, the percentile is the share of panel samples whose CLR is **at or
    below** the personal sample's.
 
-| Column             | Meaning                                                                                           |
-| ------------------ | ------------------------------------------------------------------------------------------------- |
-| `genus`            | genus, or `Unassigned`                                                                            |
-| `sample`           | the personal sample                                                                               |
-| `clr`              | its centred-log-ratio value for this genus                                                        |
-| `percentile`       | the share of panel samples (%) at or below that value                                             |
-| `panel_median_clr` | the panel median, for scale                                                                       |
-| `panel_n`          | number of panel samples compared against                                                          |
-| `panel_prevalence` | fraction of panel samples in which the genus is present                                           |
+| Column             | Meaning                                                                                                   |
+| ------------------ | --------------------------------------------------------------------------------------------------------- |
+| `genus`            | genus, or `Unassigned`                                                                                    |
+| `sample`           | the personal sample                                                                                       |
+| `clr`              | its centred-log-ratio value for this genus                                                                |
+| `percentile`       | the share of panel samples (%) at or below that value                                                     |
+| `panel_median_clr` | the panel median, for scale                                                                               |
+| `panel_n`          | number of panel samples compared against                                                                  |
+| `panel_prevalence` | fraction of panel samples in which the genus is present                                                   |
 | `personal_counts`  | raw reads for this genus in the personal sample, so a percentile resting on a handful of reads is visible |
 
 Rows are sorted by sample and then by percentile, highest first.

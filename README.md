@@ -8,8 +8,8 @@
 
 **Cross-cohort comparison of personal 16S gut microbiome profiles.**
 
-`gutportrait` answers one question honestly: *where does this gut microbiome sit relative
-to other people's, and how far can that comparison be trusted?*
+`gutportrait` answers one question honestly: _where does this gut microbiome sit relative
+to other people's, and how far can that comparison be trusted?_
 
 It is a downstream companion to [`nf-core/ampliseq`](https://nf-co.re/ampliseq), not a
 replacement for it. **ampliseq turns reads into ASVs. gutportrait turns ASVs into a
@@ -35,11 +35,11 @@ reproducibility.
 
 Three separable layers cause it:
 
-| Layer | What differs between two datasets | Can it be fixed? |
-|---|---|---|
-| **Wet lab** | Primers, extraction kit, lysis, PCR cycles, instrument, read length | **No — not downstream.** Only avoidable by matching protocol, or carried as a batch term |
-| **Bioinformatics** | Denoiser, truncation, chimera method, reference database and version, rarefaction depth | **Yes — by co-processing.** Run everything through one pipeline invocation |
-| **Statistical** | Compositionality, sequencing depth, zero-inflation, cohort composition | Yes — CLR-space methods, fixed rarefaction, matched-cohort selection, explicit batch terms |
+| Layer              | What differs between two datasets                                                       | Can it be fixed?                                                                           |
+| ------------------ | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **Wet lab**        | Primers, extraction kit, lysis, PCR cycles, instrument, read length                     | **No — not downstream.** Only avoidable by matching protocol, or carried as a batch term   |
+| **Bioinformatics** | Denoiser, truncation, chimera method, reference database and version, rarefaction depth | **Yes — by co-processing.** Run everything through one pipeline invocation                 |
+| **Statistical**    | Compositionality, sequencing depth, zero-inflation, cohort composition                  | Yes — CLR-space methods, fixed rarefaction, matched-cohort selection, explicit batch terms |
 
 The design principle that follows:
 
@@ -47,7 +47,7 @@ The design principle that follows:
 > model. Correction is the fallback for what you cannot co-process, not the strategy.
 
 That is why the reference panel is built from **raw public FASTQ** and run through the
-*same ampliseq invocation* as your own reads — rather than assembled from published
+_same ampliseq invocation_ as your own reads — rather than assembled from published
 abundance tables and corrected afterwards. It is more work, and it is the entire point.
 
 **And it is why ampliseq is used unmodified and version-pinned rather than forked.**
@@ -91,13 +91,13 @@ flowchart TD
 **The handoff is a directory, not a file format we invented.** gutportrait consumes
 ampliseq's published outputs and never touches a FASTQ:
 
-| ampliseq produces | gutportrait uses it for | |
-|---|---|---|
-| `dada2/ASV_table.tsv` | the count matrix: every sample, personal and panel | **used** |
-| `dada2/ASV_tax_species.<db>.tsv` | named-rank taxonomy for the genus collapse | **used** |
-| `dada2/ASV_seqs.fasta` | phylogenetic placement (V4-projected arm) | planned |
-| `qiime2/phylogenetic_tree/tree.nwk` | phylogenetic diversity | planned |
-| `phyloseq/*.rds`, `treesummarizedexperiment/*.rds` | direct input to the R modules | planned |
+| ampliseq produces                                  | gutportrait uses it for                            |          |
+| -------------------------------------------------- | -------------------------------------------------- | -------- |
+| `dada2/ASV_table.tsv`                              | the count matrix: every sample, personal and panel | **used** |
+| `dada2/ASV_tax_species.<db>.tsv`                   | named-rank taxonomy for the genus collapse         | **used** |
+| `dada2/ASV_seqs.fasta`                             | phylogenetic placement (V4-projected arm)          | planned  |
+| `qiime2/phylogenetic_tree/tree.nwk`                | phylogenetic diversity                             | planned  |
+| `phyloseq/*.rds`, `treesummarizedexperiment/*.rds` | direct input to the R modules                      | planned  |
 
 `qiime2/rel_abundance_tables/rel-table-*.tsv` is deliberately **not** used — see the
 rank-numbering caveat below.
@@ -107,15 +107,15 @@ ampliseq results directory** — not just ones produced by this project.
 
 > ### ⚠ Rank numbering depends on the taxonomy database
 >
-> `rel-table-N.tsv` is numbered by *column position* in the taxonomy string, not by rank
+> `rel-table-N.tsv` is numbered by _column position_ in the taxonomy string, not by rank
 > name. **SBDI-GTDB emits both a `Domain` and a `Kingdom` column** (both `Bacteria`), which
 > shifts every rank down by one relative to SILVA. ampliseq only writes tables 2–6, so with
 > SBDI-GTDB:
 >
-> | table | SILVA | SBDI-GTDB |
-> |---|---|---|
-> | `rel-table-6` | Genus | **Family** |
-> | genus | `rel-table-6` | **not emitted** |
+> | table         | SILVA         | SBDI-GTDB       |
+> | ------------- | ------------- | --------------- |
+> | `rel-table-6` | Genus         | **Family**      |
+> | genus         | `rel-table-6` | **not emitted** |
 >
 > gutportrait therefore does **not** read a pre-made genus table. It collapses to genus
 > itself from `dada2/ASV_tax_species.<db>.tsv`, whose columns are named ranks, joined to
@@ -175,13 +175,13 @@ self_sample1,personal,self,RUN_A,40s,female,Normal,Netherlands
 panel_ERR123,panel,PRJEB00000,RUN_B,,,,
 ```
 
-| column | required | meaning |
-|---|---|---|
-| `sample` | yes | must match a column of ampliseq's `ASV_table.tsv` exactly |
-| `role` | yes | `personal` or `panel` |
-| `study` | yes | the batch unit. Your samples get a study of their own — mixing roles within one study is an error |
-| `run` | yes | sequencing run, the same value as in the ampliseq samplesheet |
-| `age_cat`, `sex`, `bmi_cat`, `country` | no | used for cohort matching and the real-effect positive control. Leave empty where unknown, which is normal for ENA panels |
+| column                                 | required | meaning                                                                                                                  |
+| -------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `sample`                               | yes      | must match a column of ampliseq's `ASV_table.tsv` exactly                                                                |
+| `role`                                 | yes      | `personal` or `panel`                                                                                                    |
+| `study`                                | yes      | the batch unit. Your samples get a study of their own — mixing roles within one study is an error                        |
+| `run`                                  | yes      | sequencing run, the same value as in the ampliseq samplesheet                                                            |
+| `age_cat`, `sex`, `bmi_cat`, `country` | no       | used for cohort matching and the real-effect positive control. Leave empty where unknown, which is normal for ENA panels |
 
 ```bash
 nextflow run Biocentric/gutportrait -profile singularity \
@@ -199,13 +199,13 @@ with known signals planted in it; see [docs/usage.md](docs/usage.md#test-profile
 
 ## What gutportrait does
 
-| Stage | What it does |
-|---|---|
-| **Harmonise** | Greengenes2 placement for phylogenetic diversity; genus collapse and centred-log-ratio for everything else. Percentiles are computed in **CLR space**, because a raw relative abundance is a ratio to an unmeasured total — treating it as a measurement is what manufactures "your *Akkermansia* is low" out of noise |
-| **Integrate** | PERMANOVA variance partition across study, run, age, sex, BMI. MMUPHin batch correction, with every downstream number computed on **both corrected and uncorrected** data — anything that flips between them is reported as unstable, not as a finding |
-| **Position** | Matched-cohort selection, alpha/beta percentiles, enterosignature mixture by NNLS, per-genus CLR percentiles, and lifestyle strata contrasts computed *within* the panel |
-| **Deviate** | Extremes-only flags — very low diversity, single-taxon dominance, Proteobacteria bloom — measured against the panel's **between-study spread**, and raised only when both arms agree |
-| **Report** | Every number carries five things: value, technical uncertainty, reference *n*, evidence grade, and what it does not mean |
+| Stage         | What it does                                                                                                                                                                                                                                                                                                           |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Harmonise** | Greengenes2 placement for phylogenetic diversity; genus collapse and centred-log-ratio for everything else. Percentiles are computed in **CLR space**, because a raw relative abundance is a ratio to an unmeasured total — treating it as a measurement is what manufactures "your _Akkermansia_ is low" out of noise |
+| **Integrate** | PERMANOVA variance partition across study, run, age, sex, BMI. MMUPHin batch correction, with every downstream number computed on **both corrected and uncorrected** data — anything that flips between them is reported as unstable, not as a finding                                                                 |
+| **Position**  | Matched-cohort selection, alpha/beta percentiles, enterosignature mixture by NNLS, per-genus CLR percentiles, and lifestyle strata contrasts computed _within_ the panel                                                                                                                                               |
+| **Deviate**   | Extremes-only flags — very low diversity, single-taxon dominance, Proteobacteria bloom — measured against the panel's **between-study spread**, and raised only when both arms agree                                                                                                                                   |
+| **Report**    | Every number carries five things: value, technical uncertainty, reference _n_, evidence grade, and what it does not mean                                                                                                                                                                                               |
 
 ### Gates that can veto or demote the report
 
@@ -224,24 +224,24 @@ parameter with a strict default, and the report states the values it used.
 - **Batch dominance.** A lifestyle contrast counts as a finding only if it explains more
   variance than study does (PERMANOVA on Aitchison distance). A personal deviation counts
   only if it is larger than the largest between-study difference in the panel. Anything
-  else is demoted to *"orientation only"*, and if study explains more than 10% of the
+  else is demoted to _"orientation only"_, and if study explains more than 10% of the
   variance overall, the report says so at the top, in those words.
 
 ---
 
 ## Implementation status
 
-| Stage | Module | Status |
-|---|---|---|
-| Harmonise | `COLLAPSE_GENUS`: genus collapse from named-rank taxonomy; unassigned reads stay in as an explicit `Unassigned` row | ✅ implemented |
-| Harmonise | phylogenetic placement for the V4-projected arm | planned. First test whether ampliseq's own `--run_pplace` accepts a Greengenes2 backbone; if so, no module is needed |
-| Integrate | `BATCH_DIAGNOSE` (PERMANOVA variance partition), `BATCH_CORRECT` (MMUPHin) | planned |
-| Gates | `POSITIVE_CONTROL`, `BATCH_DOMINANCE` | planned |
-| Position | `TAXON_PERCENTILES`: per-genus CLR percentile of each personal sample against the panel | ✅ implemented, against the **whole, uncorrected** panel for now. Matching and correction arrive with Integrate |
-| Position | cohort matching, alpha/beta position, enterosignatures, lifestyle contrasts | planned |
-| Deviate | `DEVIATION_FLAGS` | planned |
-| Longitudinal | within-person noise floor, behind `--longitudinal` | planned |
-| Report | English, HTML and PDF | planned |
+| Stage        | Module                                                                                                              | Status                                                                                                               |
+| ------------ | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Harmonise    | `COLLAPSE_GENUS`: genus collapse from named-rank taxonomy; unassigned reads stay in as an explicit `Unassigned` row | ✅ implemented                                                                                                       |
+| Harmonise    | phylogenetic placement for the V4-projected arm                                                                     | planned. First test whether ampliseq's own `--run_pplace` accepts a Greengenes2 backbone; if so, no module is needed |
+| Integrate    | `BATCH_DIAGNOSE` (PERMANOVA variance partition), `BATCH_CORRECT` (MMUPHin)                                          | planned                                                                                                              |
+| Gates        | `POSITIVE_CONTROL`, `BATCH_DOMINANCE`                                                                               | planned                                                                                                              |
+| Position     | `TAXON_PERCENTILES`: per-genus CLR percentile of each personal sample against the panel                             | ✅ implemented, against the **whole, uncorrected** panel for now. Matching and correction arrive with Integrate      |
+| Position     | cohort matching, alpha/beta position, enterosignatures, lifestyle contrasts                                         | planned                                                                                                              |
+| Deviate      | `DEVIATION_FLAGS`                                                                                                   | planned                                                                                                              |
+| Longitudinal | within-person noise floor, behind `--longitudinal`                                                                  | planned                                                                                                              |
+| Report       | English, HTML and PDF                                                                                               | planned                                                                                                              |
 
 Until the gates exist, a percentile from this pipeline is a position, not a finding.
 
@@ -253,10 +253,10 @@ The upstream half is confirmed working on real data — three personal V3–V4 s
 (341F/785R, MiSeq 2×300), each from a different sequencing run:
 
 | sample | raw pairs | primer-trimmed | merged | non-chimeric | end-to-end |
-|---|---|---|---|---|---|
-| A | 59,128 | 98.9% | 87.3% | 23,859 | 40.4% |
-| B | 46,817 | 98.9% | 88.7% | 20,478 | 43.7% |
-| C | 15,661 | 99.5% | 83.6% | 7,744 | 49.4% |
+| ------ | --------- | -------------- | ------ | ------------ | ---------- |
+| A      | 59,128    | 98.9%          | 87.3%  | 23,859       | 40.4%      |
+| B      | 46,817    | 98.9%          | 88.7%  | 20,478       | 43.7%      |
+| C      | 15,661    | 99.5%          | 83.6%  | 7,744        | 49.4%      |
 
 Primer retention near 99% confirms the primer pair; merge rates of 84–89% confirm the
 truncation lengths leave adequate overlap on a ~465 bp amplicon read at 2×301.
@@ -267,14 +267,14 @@ truncation lengths leave adequate overlap on a ~465 bp amplicon read at 2×301.
 
 **Will:** where a sample sits relative to people processed identically to it — on
 diversity, genus abundance ranks and enterosignature mixture, each with an honest
-uncertainty; how lifestyle axes with real evidence behind them separate people *within the
-reference cohort*; and whether anything in the sample is grossly abnormal relative to the
+uncertainty; how lifestyle axes with real evidence behind them separate people _within the
+reference cohort_; and whether anything in the sample is grossly abnormal relative to the
 panel's own between-study spread.
 
 **Will not:** diagnose anything; produce a wellness score or any composite index (validated
 indices such as GMHI and GMWI2 require species-level **shotgun** profiles — no 16S path
-exists); tell you what to eat; or certify that a microbiome is healthy. *"Nothing stands
-out"* is the strongest negative result available here, and it is not the same statement.
+exists); tell you what to eat; or certify that a microbiome is healthy. _"Nothing stands
+out"_ is the strongest negative result available here, and it is not the same statement.
 
 16S detects gross abnormality far better than it certifies normality. The report is written
 to respect that asymmetry rather than paper over it.
@@ -315,4 +315,4 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-*Not medical advice. Nothing produced by this pipeline is diagnostic.*
+_Not medical advice. Nothing produced by this pipeline is diagnostic._

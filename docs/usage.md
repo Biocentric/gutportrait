@@ -31,16 +31,16 @@ panel_ERR0000001,panel,PRJEB00000,RUN_C,,,,
 cohort_S0001,panel,COHORT_X,RUN_D,30s,male,Overweight,Germany
 ```
 
-| Column    | Required | Description                                                                                                                                                                                                                  |
-| --------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sample`  | yes      | Sample name exactly as it appears as a column of ampliseq's `dada2/ASV_table.tsv`. Must match `^[a-zA-Z][a-zA-Z0-9_]+$`, the same rule ampliseq applies.                                                                     |
-| `role`    | yes      | `personal` for your samples, `panel` for reference samples.                                                                                                                                                                  |
+| Column    | Required | Description                                                                                                                                                                                                                   |
+| --------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sample`  | yes      | Sample name exactly as it appears as a column of ampliseq's `dada2/ASV_table.tsv`. Must match `^[a-zA-Z][a-zA-Z0-9_]+$`, the same rule ampliseq applies.                                                                      |
+| `role`    | yes      | `personal` for your samples, `panel` for reference samples.                                                                                                                                                                   |
 | `study`   | yes      | The batch unit, usually the ENA project. Batch diagnosis and correction work per study. Personal samples need a study of their own: a study that contains both roles is rejected, so your samples can never pass for a batch. |
 | `run`     | yes      | The sequencing run (flowcell), the same value as the `run` column of the ampliseq samplesheet. It is the unit DADA2 learned its error model on.                                                                               |
-| `age_cat` | no       | `20s`, `30s`, `40s`, `50s`, `60s` or `70+`.                                                                                                                                                                                  |
-| `sex`     | no       | `male`, `female` or `other`.                                                                                                                                                                                                 |
-| `bmi_cat` | no       | `Underweight`, `Normal`, `Overweight` or `Obese`.                                                                                                                                                                            |
-| `country` | no       | Free text.                                                                                                                                                                                                                   |
+| `age_cat` | no       | `20s`, `30s`, `40s`, `50s`, `60s` or `70+`.                                                                                                                                                                                   |
+| `sex`     | no       | `male`, `female` or `other`.                                                                                                                                                                                                  |
+| `bmi_cat` | no       | `Underweight`, `Normal`, `Overweight` or `Obese`.                                                                                                                                                                             |
+| `country` | no       | Free text.                                                                                                                                                                                                                    |
 
 Leave optional cells empty where a value is unknown. For public ENA panels that is the
 normal case: they publish study-level inclusion criteria, not per-sample metadata. The
@@ -93,11 +93,11 @@ results directory.
 
 ## Analysis options
 
-| Parameter             | Default | Meaning                                                                                                                                                         |
-| --------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--min_panel_samples` | `20`    | Refuse to run with fewer panel samples than this.                                                                                                               |
+| Parameter             | Default | Meaning                                                                                                                                                                  |
+| --------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--min_panel_samples` | `20`    | Refuse to run with fewer panel samples than this.                                                                                                                        |
 | `--min_prevalence`    | `0.1`   | Keep genera present in at least this fraction of **panel** samples. The filter never looks at personal samples: selecting features for being present in you is circular. |
-| `--pseudocount`       | `0.5`   | Added to every count before the centred-log-ratio transform.                                                                                                    |
+| `--pseudocount`       | `0.5`   | Added to every count before the centred-log-ratio transform.                                                                                                             |
 
 The defaults are deliberately strict. The values used are written next to the results, in
 `percentiles/<arm>.percentile_params.tsv`.
@@ -113,12 +113,12 @@ nextflow run Biocentric/gutportrait -profile test,docker --outdir results_test
 personal samples, laid out exactly like an ampliseq 2.18.0 results directory. Known
 signals are planted in it, so that every stage has an answer to recover:
 
-| Planted signal                                                                                          | Recovered by                                                                            |
-| ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| Personal sample `self_P3` carries an _Escherichia-Shigella_ bloom (about 31% of reads)                   | `TAXON_PERCENTILES`: CLR far above the panel median, at the 100th percentile             |
-| Older age bands have a more even composition, so Shannon diversity rises with `age_cat`                  | the real-effect positive control (planned)                                              |
-| Study C carries _Bacteroides_ ×3, _Bifidobacterium_ ×2 and _Segatella_ ×0.3                              | the batch-dominance gate (planned)                                                      |
-| Study C has no per-sample metadata, like the ENA panels                                                  | cohort matching, which must fall back to "unmatched" for it (planned)                   |
+| Planted signal                                                                          | Recovered by                                                                 |
+| --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Personal sample `self_P3` carries an _Escherichia-Shigella_ bloom (about 31% of reads)  | `TAXON_PERCENTILES`: CLR far above the panel median, at the 100th percentile |
+| Older age bands have a more even composition, so Shannon diversity rises with `age_cat` | the real-effect positive control (planned)                                   |
+| Study C carries _Bacteroides_ ×3, _Bifidobacterium_ ×2 and _Segatella_ ×0.3             | the batch-dominance gate (planned)                                           |
+| Study C has no per-sample metadata, like the ENA panels                                 | cohort matching, which must fall back to "unmatched" for it (planned)        |
 
 The fixture is invented, including the personal samples and their metadata.
 `python tests/fixtures/make_synthetic_fixture.py` regenerates it byte-identically.
