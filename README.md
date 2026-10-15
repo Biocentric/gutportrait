@@ -137,13 +137,21 @@ nextflow run nf-core/ampliseq -r 2.18.0 -profile singularity \
     --FW_primer CCTACGGGNGGCWGCAG \
     --RV_primer GACTACHVGGGTATCTAATCC \
     --trunclenf 280 --trunclenr 240 \
-    --dada_ref_taxonomy sbdi-gtdb \
+    --dada_ref_taxonomy silva \
     --outdir ampliseq_results
 ```
 
 **Pin every one of those values and never change them mid-project.** Primers, truncation
 lengths, database and pipeline version are all part of the assay; changing one makes your
 timepoints incomparable to each other.
+
+> **Why SILVA and not ampliseq's default.** ampliseq 2.18.0 defaults to SBDI-GTDB. On
+> these V3–V4 reads that left **38.6% of ASVs classified no deeper than "Bacteria"**;
+> SILVA 138.2 on the identical ASVs left 0.3%. Genus-or-better coverage was **48.6% vs
+> 79.0%**, and the worst per-sample unassigned read fraction fell from 49.7% to 9.9%.
+> GTDB does reach species more often where it classifies at all (27.0% vs 21.6%), but
+> genus percentiles are what this pipeline reports, so coverage wins. Measure this on
+> your own data before trusting any default.
 
 ### Step 2 — compare with gutportrait
 
