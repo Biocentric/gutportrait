@@ -32,6 +32,7 @@ workflow PIPELINE_INITIALISATION {
     nextflow_cli_args //   array: List of positional nextflow CLI args
     outdir            //  string: The output directory where the results will be saved
     input             //  string: Path to input samplesheet
+    min_panel_samples // integer: Minimum number of panel samples the samplesheet must contain
     help              // boolean: Display help message and exit
     help_full         // boolean: Show the full help message
     show_hidden       // boolean: Show hidden parameters in the help message
@@ -60,7 +61,7 @@ workflow PIPELINE_INITIALISATION {
         before_text = before_text.replaceAll(/\033\[[0-9;]*m/, '')
     }
 
-    command = "nextflow run ${workflow.manifest.name} -profile <docker/singularity/.../institute> --input samplesheet.csv --outdir <OUTDIR>"
+    command = "nextflow run ${workflow.manifest.name} -profile <docker/singularity/.../institute> --input samplesheet.csv --ampliseq_results <AMPLISEQ_OUTDIR> --outdir <OUTDIR>"
 
     UTILS_NFSCHEMA_PLUGIN (
         workflow,
@@ -83,28 +84,15 @@ workflow PIPELINE_INITIALISATION {
     )
 
     //
-    // Create channel from input file provided through params.input
+    // Validate the samplesheet. gutportrait takes counts from the ampliseq results
+    // directory and metadata from this sheet, so the analysis modules need the sheet
+    // itself rather than a channel of per-sample files. Each row is checked against
+    // assets/schema_input.json; the rules that span rows are checked here.
     //
-
-    channel
-        .fromList(samplesheetToList(input, "${projectDir}/assets/schema_input.json"))
-        .map {
-            meta, fastq_1, fastq_2 ->
-                if (!fastq_2) {
-                    return [ meta.id, meta + [ single_end:true ], [ fastq_1 ] ]
-                } else {
-                    return [ meta.id, meta + [ single_end:false ], [ fastq_1, fastq_2 ] ]
-                }
-        }
-        .groupTuple()
-        .map { samplesheet ->
-            validateInputSamplesheet(samplesheet)
-        }
-        .map {
-            meta, fastqs ->
-                return [ meta, fastqs.flatten() ]
-        }
-        .set { ch_samplesheet }
+    def rows = samplesheetToList(input, "${projectDir}/assets/schema_input.json")
+    def roles = validateSamplesheetRows(rows, min_panel_samples)
+    log.info "Samplesheet: ${roles.personal} personal and ${roles.panel} panel sample(s) across ${roles.studies} studies"
+    def ch_samplesheet = channel.value(file(input, checkIfExists: true))
 
     emit:
     samplesheet = ch_samplesheet
@@ -163,41 +151,65 @@ workflow PIPELINE_COMPLETION {
 */
 
 //
-// Validate channels from input samplesheet
+// Checks that span rows, which a per-row JSON schema cannot express
 //
-def validateInputSamplesheet(input) {
-    def (metas, fastqs) = input[1..2]
+def validateSamplesheetRows(rows, min_panel_samples) {
+    // samplesheetToList puts the meta map first; every column here is a meta field
+    def metas = rows.collect { row -> row instanceof List ? row[0] : row }
 
-    // Check that multiple runs of the same sample are of the same datatype i.e. single-end / paired-end
-    def endedness_ok = metas.collect{ meta -> meta.single_end }.unique().size == 1
-    if (!endedness_ok) {
-        error("Please check input samplesheet -> Multiple runs of a sample must be of the same datatype i.e. single-end or paired-end: ${metas[0].id}")
+    def duplicated = metas.collect { meta -> meta.id }
+        .countBy { id -> id }
+        .findAll { _id, n -> n > 1 }
+        .keySet()
+    if (duplicated) {
+        error("Samplesheet: sample names must be unique. Duplicated: ${duplicated.join(', ')}")
     }
 
-    return [ metas[0], fastqs ]
+    def n_personal = metas.count { meta -> meta.role == 'personal' }
+    def n_panel    = metas.count { meta -> meta.role == 'panel' }
+    def n_studies  = metas.findAll { meta -> meta.role == 'panel' }.collect { meta -> meta.study }.unique().size()
+
+    if (n_personal < 1) {
+        error("Samplesheet: no rows have role 'personal'. There is nothing to position against the panel.")
+    }
+    if (n_panel < min_panel_samples) {
+        error("Samplesheet: ${n_panel} panel sample(s), but --min_panel_samples is ${min_panel_samples}. A percentile against fewer samples is too coarse to report.")
+    }
+    def mixed = metas.findAll { meta -> meta.role == 'personal' }.collect { meta -> meta.study }
+        .intersect(metas.findAll { meta -> meta.role == 'panel' }.collect { meta -> meta.study })
+    if (mixed) {
+        error("Samplesheet: study ${mixed.unique().join(', ')} contains both personal and panel samples. Give the personal samples their own study, so they are never mistaken for a reference batch.")
+    }
+
+    return [personal: n_personal, panel: n_panel, studies: n_studies]
 }
 //
 // Generate methods description for MultiQC
 //
+//
+// ampliseq is a separate pipeline run, but its output is this pipeline's input, so the tools
+// that produced it belong in the methods text. SILVA is cited only when it was the database.
+//
 def toolCitationText() {
-    // TODO nf-core: Optionally add in-text citation tools to this list.
-    // Can use ternary operators to dynamically construct based conditions, e.g. params["run_xyz"] ? "Tool (Foo et al. 2023)" : "",
-    // Uncomment function in methodsDescriptionText to render in MultiQC report
+    def taxonomy = params.taxonomy_db == 'silva' ? " and classified against SILVA (Quast et al. 2013)" : ""
     def citation_text = [
-            "Tools used in the workflow included:",
-            "MultiQC (Ewels et al. 2016)",
-            "."
+            "Amplicon sequence variants were inferred upstream with nf-core/ampliseq (Straub et al. 2020) using DADA2 (Callahan et al. 2016)${taxonomy}.",
+            "Genus tables and centred-log-ratio percentiles were computed with pandas (McKinney 2010) and NumPy (Harris et al. 2020), treating the data as compositional (Gloor et al. 2017).",
+            "Results were summarised with MultiQC (Ewels et al. 2016)."
         ].join(' ').trim()
 
     return citation_text
 }
 
 def toolBibliographyText() {
-    // TODO nf-core: Optionally add bibliographic entries to this list.
-    // Can use ternary operators to dynamically construct based conditions, e.g. params["run_xyz"] ? "<li>Author (2023) Pub name, Journal, DOI</li>" : "",
-    // Uncomment function in methodsDescriptionText to render in MultiQC report
     def reference_text = [
-            "<li>Ewels, P., Magnusson, M., Lundin, S., & Käller, M. (2016). MultiQC: summarize analysis results for multiple tools and samples in a single report. Bioinformatics , 32(19), 3047–3048. doi: /10.1093/bioinformatics/btw354</li>"
+            '<li>Straub, D., Blackwell, N., Langarica-Fuentes, A., Peltzer, A., Nahnsen, S., & Kleindienst, S. (2020). Interpretations of environmental microbial community studies are biased by the selected 16S rRNA (gene) amplicon sequencing pipeline. Frontiers in Microbiology, 11, 550420. doi: <a href="https://doi.org/10.3389/fmicb.2020.550420">10.3389/fmicb.2020.550420</a></li>',
+            '<li>Callahan, B. J., McMurdie, P. J., Rosen, M. J., Han, A. W., Johnson, A. J. A., & Holmes, S. P. (2016). DADA2: High-resolution sample inference from Illumina amplicon data. Nature Methods, 13(7), 581–583. doi: <a href="https://doi.org/10.1038/nmeth.3869">10.1038/nmeth.3869</a></li>',
+            params.taxonomy_db == 'silva' ? '<li>Quast, C., Pruesse, E., Yilmaz, P., Gerken, J., Schweer, T., Yarza, P., Peplies, J., & Glöckner, F. O. (2013). The SILVA ribosomal RNA gene database project: improved data processing and web-based tools. Nucleic Acids Research, 41(Database issue), D590–D596. doi: <a href="https://doi.org/10.1093/nar/gks1219">10.1093/nar/gks1219</a></li>' : '',
+            '<li>McKinney, W. (2010). Data structures for statistical computing in Python. Proceedings of the 9th Python in Science Conference, 56–61. doi: <a href="https://doi.org/10.25080/Majora-92bf1922-00a">10.25080/Majora-92bf1922-00a</a></li>',
+            '<li>Harris, C. R., Millman, K. J., van der Walt, S. J., et al. (2020). Array programming with NumPy. Nature, 585(7825), 357–362. doi: <a href="https://doi.org/10.1038/s41586-020-2649-2">10.1038/s41586-020-2649-2</a></li>',
+            '<li>Gloor, G. B., Macklaim, J. M., Pawlowsky-Glahn, V., & Egozcue, J. J. (2017). Microbiome datasets are compositional: and this is not optional. Frontiers in Microbiology, 8, 2224. doi: <a href="https://doi.org/10.3389/fmicb.2017.02224">10.3389/fmicb.2017.02224</a></li>',
+            '<li>Ewels, P., Magnusson, M., Lundin, S., & Käller, M. (2016). MultiQC: summarize analysis results for multiple tools and samples in a single report. Bioinformatics, 32(19), 3047–3048. doi: <a href="https://doi.org/10.1093/bioinformatics/btw354">10.1093/bioinformatics/btw354</a></li>'
         ].join(' ').trim()
 
     return reference_text
@@ -224,12 +236,8 @@ def methodsDescriptionText(mqc_methods_yaml) {
     meta["nodoi_text"] = meta.manifest_map.doi ? "" : "<li>If available, make sure to update the text to include the Zenodo DOI of version of the pipeline used. </li>"
 
     // Tool references
-    meta["tool_citations"] = ""
-    meta["tool_bibliography"] = ""
-
-    // TODO nf-core: Only uncomment below if logic in toolCitationText/toolBibliographyText has been filled!
-    // meta["tool_citations"] = toolCitationText().replaceAll(", \\.", ".").replaceAll("\\. \\.", ".").replaceAll(", \\.", ".")
-    // meta["tool_bibliography"] = toolBibliographyText()
+    meta["tool_citations"] = toolCitationText().replaceAll(", \\.", ".").replaceAll("\\. \\.", ".").replaceAll(", \\.", ".")
+    meta["tool_bibliography"] = toolBibliographyText()
 
 
     def methods_text = mqc_methods_yaml.text

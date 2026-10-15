@@ -3,6 +3,8 @@
     IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
+include { COLLAPSE_GENUS         } from '../modules/local/collapse_genus/main'
+include { TAXON_PERCENTILES      } from '../modules/local/taxon_percentiles/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
@@ -18,7 +20,10 @@ include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_gutp
 workflow GUTPORTRAIT {
 
     take:
-    ch_samplesheet // channel: samplesheet read in from --input
+    ch_samplesheet   // channel: [ path(samplesheet) ], validated, value channel
+    ampliseq_results // string:  path to an nf-core/ampliseq results directory
+    taxonomy_db      // string:  reference database ampliseq classified against, e.g. 'silva'
+    arm              // string:  'native' (V3-V4) or 'v4projected'
     multiqc_config
     multiqc_logo
     multiqc_methods_description
@@ -28,6 +33,29 @@ workflow GUTPORTRAIT {
 
     def ch_versions = channel.empty()
     def ch_multiqc_files = channel.empty()
+
+    //
+    // Read the ampliseq handoff. Only named-rank taxonomy is used: the positional
+    // rel-table-N.tsv files change meaning with the reference database (under
+    // SBDI-GTDB rel-table-6 is Family and no genus table exists at all).
+    //
+    def asv_table = file("${ampliseq_results}/dada2/ASV_table.tsv", checkIfExists: true)
+    def taxonomy  = file("${ampliseq_results}/dada2/ASV_tax_species.${taxonomy_db}.tsv", checkIfExists: true)
+
+    //
+    // STAGE 2 - HARMONISE: collapse to genus, keeping unassigned reads as an explicit row
+    //
+    COLLAPSE_GENUS (
+        channel.of([ [ id: arm ], asv_table, taxonomy ])
+    )
+
+    //
+    // STAGE 4 - POSITION: per-genus CLR percentiles of each personal sample vs the panel
+    //
+    TAXON_PERCENTILES (
+        COLLAPSE_GENUS.out.counts,
+        ch_samplesheet
+    )
 
     //
     // Collate and save software versions

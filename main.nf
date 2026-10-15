@@ -37,6 +37,9 @@ workflow BIOCENTRIC_GUTPORTRAIT {
     //
     GUTPORTRAIT (
         samplesheet,
+        params.ampliseq_results,
+        params.taxonomy_db,
+        params.arm,
         params.multiqc_config,
         params.multiqc_logo,
         params.multiqc_methods_description,
@@ -64,6 +67,7 @@ workflow {
         args,
         params.outdir,
         params.input,
+        params.min_panel_samples,
         params.help,
         params.help_full,
         params.show_hidden

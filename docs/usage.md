@@ -4,58 +4,135 @@
 
 ## Introduction
 
-<!-- TODO nf-core: Add documentation about anything specific to running your pipeline. For general topics, please point to (and add to) the main nf-core website. -->
+gutportrait is the second of two pipeline runs. nf-core/ampliseq turns reads into ASVs;
+gutportrait reads ampliseq's results directory and positions your samples against a
+reference panel that was processed **in the same ampliseq run**. It never touches a FASTQ.
+
+A full analysis is therefore:
+
+1. one nf-core/ampliseq run over your samples and the panel together (the
+   [README](../README.md#step-1--profile-with-ampliseq) lists the pinned settings), then
+2. one gutportrait run over that results directory, with a samplesheet that says which
+   samples are yours and which are the panel.
 
 ## Samplesheet input
-
-You will need to create a samplesheet with information about the samples you would like to analyse before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row as shown in the examples below.
 
 ```bash
 --input '[path to samplesheet file]'
 ```
 
-### Multiple runs of the same sample
-
-The `sample` identifiers have to be the same when you have re-sequenced the same sample more than once e.g. to increase sequencing depth. The pipeline will concatenate the raw reads before performing any downstream analysis. Below is an example for the same sample sequenced across 3 lanes:
-
-```csv title="samplesheet.csv"
-sample,fastq_1,fastq_2
-CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
-CONTROL_REP1,AEG588A1_S1_L003_R1_001.fastq.gz,AEG588A1_S1_L003_R2_001.fastq.gz
-CONTROL_REP1,AEG588A1_S1_L004_R1_001.fastq.gz,AEG588A1_S1_L004_R2_001.fastq.gz
-```
-
-### Full samplesheet
-
-The pipeline will auto-detect whether a sample is single- or paired-end using the information provided in the samplesheet. The samplesheet can have as many columns as you desire, however, there is a strict requirement for the first 3 columns to match those defined in the table below.
-
-A final samplesheet file consisting of both single- and paired-end data may look something like the one below. This is for 6 samples, where `TREATMENT_REP3` has been sequenced twice.
+A comma-separated file with a header row and one row per sample of the ampliseq run that
+should take part in the comparison:
 
 ```csv title="samplesheet.csv"
-sample,fastq_1,fastq_2
-CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
-CONTROL_REP2,AEG588A2_S2_L002_R1_001.fastq.gz,AEG588A2_S2_L002_R2_001.fastq.gz
-CONTROL_REP3,AEG588A3_S3_L002_R1_001.fastq.gz,AEG588A3_S3_L002_R2_001.fastq.gz
-TREATMENT_REP1,AEG588A4_S4_L003_R1_001.fastq.gz,
-TREATMENT_REP2,AEG588A5_S5_L003_R1_001.fastq.gz,
-TREATMENT_REP3,AEG588A6_S6_L003_R1_001.fastq.gz,
-TREATMENT_REP3,AEG588A6_S6_L004_R1_001.fastq.gz,
+sample,role,study,run,age_cat,sex,bmi_cat,country
+self_sample1,personal,self,RUN_A,40s,female,Normal,Netherlands
+panel_ERR0000001,panel,PRJEB00000,RUN_C,,,,
+cohort_S0001,panel,COHORT_X,RUN_D,30s,male,Overweight,Germany
 ```
 
-| Column    | Description                                                                                                                                                                            |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sample`  | Custom sample name. This entry will be identical for multiple sequencing libraries/runs from the same sample. Spaces in sample names are automatically converted to underscores (`_`). |
-| `fastq_1` | Full path to FastQ file for Illumina short reads 1. File has to be gzipped and have the extension ".fastq.gz" or ".fq.gz".                                                             |
-| `fastq_2` | Full path to FastQ file for Illumina short reads 2. File has to be gzipped and have the extension ".fastq.gz" or ".fq.gz".                                                             |
+| Column    | Required | Description                                                                                                                                                                                                                  |
+| --------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sample`  | yes      | Sample name exactly as it appears as a column of ampliseq's `dada2/ASV_table.tsv`. Must match `^[a-zA-Z][a-zA-Z0-9_]+$`, the same rule ampliseq applies.                                                                     |
+| `role`    | yes      | `personal` for your samples, `panel` for reference samples.                                                                                                                                                                  |
+| `study`   | yes      | The batch unit, usually the ENA project. Batch diagnosis and correction work per study. Personal samples need a study of their own: a study that contains both roles is rejected, so your samples can never pass for a batch. |
+| `run`     | yes      | The sequencing run (flowcell), the same value as the `run` column of the ampliseq samplesheet. It is the unit DADA2 learned its error model on.                                                                               |
+| `age_cat` | no       | `20s`, `30s`, `40s`, `50s`, `60s` or `70+`.                                                                                                                                                                                  |
+| `sex`     | no       | `male`, `female` or `other`.                                                                                                                                                                                                 |
+| `bmi_cat` | no       | `Underweight`, `Normal`, `Overweight` or `Obese`.                                                                                                                                                                            |
+| `country` | no       | Free text.                                                                                                                                                                                                                   |
 
-An [example samplesheet](../assets/samplesheet.csv) has been provided with the pipeline.
+Leave optional cells empty where a value is unknown. For public ENA panels that is the
+normal case: they publish study-level inclusion criteria, not per-sample metadata. The
+metadata columns are for cohort matching and the real-effect positive control. Samples
+without metadata are still used, but only as part of the panel as a whole.
+
+The run stops before any work starts when:
+
+- a sample name appears twice, or does not match the pattern above;
+- there is no personal sample, or there are fewer panel samples than `--min_panel_samples`;
+- a study contains both personal and panel samples.
+
+It stops at the first module when a samplesheet sample has no column in the ASV table.
+Samples that are in the ASV table but not in the samplesheet are ignored, with a note in
+the task log; that is how you analyse a subset of one large ampliseq run.
+
+An [example samplesheet](../assets/samplesheet.csv) is provided with the pipeline.
+
+## The ampliseq results directory
+
+```bash
+--ampliseq_results '[path to the --outdir of an nf-core/ampliseq run]'
+--taxonomy_db silva
+```
+
+gutportrait reads two files from it:
+
+- `dada2/ASV_table.tsv`, the ASV counts for every sample of the run;
+- `dada2/ASV_tax_species.<taxonomy_db>.tsv`, the taxonomy, with named rank columns.
+
+`--taxonomy_db` must name the database ampliseq classified against. The default, `silva`,
+matches ampliseq's `--dada_ref_taxonomy silva`. The rank-numbered
+`qiime2/rel_abundance_tables/rel-table-N.tsv` files are not used: their numbering is
+positional and shifts with the database, so under SBDI-GTDB `rel-table-6` is Family.
+
+## Comparison arms
+
+```bash
+--arm native        # or: v4projected
+```
+
+Run gutportrait once per arm. The arm names the outputs, so both arms can share one
+results directory.
+
+- `native`: a V3–V4 comparison. Your reads and a panel amplified with the same primers,
+  processed at full length.
+- `v4projected`: a V4-only comparison against the much larger body of V4 data. It comes
+  from a separate, single-end ampliseq run in which every forward read is cut at the 515F
+  primer site and truncated to a fixed length, so V3–V4 and V4 datasets share one window.
+
+## Analysis options
+
+| Parameter             | Default | Meaning                                                                                                                                                         |
+| --------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--min_panel_samples` | `20`    | Refuse to run with fewer panel samples than this.                                                                                                               |
+| `--min_prevalence`    | `0.1`   | Keep genera present in at least this fraction of **panel** samples. The filter never looks at personal samples: selecting features for being present in you is circular. |
+| `--pseudocount`       | `0.5`   | Added to every count before the centred-log-ratio transform.                                                                                                    |
+
+The defaults are deliberately strict. The values used are written next to the results, in
+`percentiles/<arm>.percentile_params.tsv`.
+
+## Test profile
+
+```bash
+nextflow run Biocentric/gutportrait -profile test,docker --outdir results_test
+```
+
+`-profile test` needs no input of your own. It runs on a synthetic dataset in
+`tests/fixtures/synthetic/`: 64 ASVs over 36 panel samples in three studies, plus three
+personal samples, laid out exactly like an ampliseq 2.18.0 results directory. Known
+signals are planted in it, so that every stage has an answer to recover:
+
+| Planted signal                                                                                          | Recovered by                                                                            |
+| ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Personal sample `self_P3` carries an _Escherichia-Shigella_ bloom (about 31% of reads)                   | `TAXON_PERCENTILES`: CLR far above the panel median, at the 100th percentile             |
+| Older age bands have a more even composition, so Shannon diversity rises with `age_cat`                  | the real-effect positive control (planned)                                              |
+| Study C carries _Bacteroides_ ×3, _Bifidobacterium_ ×2 and _Segatella_ ×0.3                              | the batch-dominance gate (planned)                                                      |
+| Study C has no per-sample metadata, like the ENA panels                                                  | cohort matching, which must fall back to "unmatched" for it (planned)                   |
+
+The fixture is invented, including the personal samples and their metadata.
+`python tests/fixtures/make_synthetic_fixture.py` regenerates it byte-identically.
 
 ## Running the pipeline
 
 The typical command for running the pipeline is as follows:
 
 ```bash
-nextflow run Biocentric/gutportrait --input ./samplesheet.csv --outdir ./results  -profile docker
+nextflow run Biocentric/gutportrait \
+    --input ./samplesheet.csv \
+    --ampliseq_results ./ampliseq_results \
+    --outdir ./results \
+    -profile docker
 ```
 
 This will launch the pipeline with the `docker` configuration profile. See below for more information about profiles.
@@ -86,6 +163,7 @@ with:
 
 ```yaml title="params.yaml"
 input: './samplesheet.csv'
+ampliseq_results: './ampliseq_results'
 outdir: './results/'
 <...>
 ```
@@ -103,6 +181,8 @@ nextflow pull Biocentric/gutportrait
 ### Reproducibility
 
 It is a good idea to specify the pipeline version when running the pipeline on your data. This ensures that a specific version of the pipeline code and software are used when you run your pipeline. If you keep using the same tag, you'll be running the same version of the pipeline, even if there have been changes to the code since.
+
+For gutportrait this matters twice over: pin the gutportrait version **and** the ampliseq version, primers, truncation lengths and taxonomy database. Results from two different ampliseq configurations are not comparable, whatever gutportrait does with them.
 
 First, go to the [Biocentric/gutportrait releases page](https://github.com/Biocentric/gutportrait/releases) and find the latest pipeline version - numeric only (eg. `1.3.1`). Then specify this when running the pipeline with `-r` (one hyphen) - eg. `-r 1.3.1`. Of course, you can switch to another version by changing the number after the `-r` flag.
 
@@ -136,7 +216,9 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
 
 - `test`
   - A profile with a complete configuration for automated testing
-  - Includes links to test data so needs no other parameters
+  - Runs on the in-repo synthetic fixture, so needs no other parameters
+- `test_full`
+  - The same synthetic fixture without the CI resource caps. There is no public full-size dataset: a real run includes one person's reads, which cannot be redistributed
 - `docker`
   - A generic configuration profile to be used with [Docker](https://docker.com/)
 - `singularity`

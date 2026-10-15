@@ -2,32 +2,59 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://raw.githubusercontent.com/Biocentric/gutportrait/master/assets/schema_input.json",
     "title": "Biocentric/gutportrait pipeline - params.input schema",
-    "description": "Schema for the file provided with params.input",
+    "description": "One row per sample in the ampliseq run: the personal samples and every reference-panel sample. Counts come from the ampliseq results directory; everything else comes from this sheet.",
     "type": "array",
     "items": {
         "type": "object",
         "properties": {
             "sample": {
                 "type": "string",
-                "pattern": "^\\S+$",
-                "errorMessage": "Sample name must be provided and cannot contain spaces",
+                "pattern": "^[a-zA-Z][a-zA-Z0-9_]+$",
+                "errorMessage": "Sample name must start with a letter and contain only letters, numbers and underscores (ampliseq's rule). It must match a column of dada2/ASV_table.tsv.",
                 "meta": ["id"]
             },
-            "fastq_1": {
+            "role": {
                 "type": "string",
-                "format": "file-path",
-                "exists": true,
-                "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.f(ast)?q\\.gz$",
-                "errorMessage": "FastQ file for reads 1 must be provided, cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
+                "enum": ["personal", "panel"],
+                "errorMessage": "role must be 'personal' (the samples being positioned) or 'panel' (the reference they are positioned against)",
+                "meta": ["role"]
             },
-            "fastq_2": {
+            "study": {
                 "type": "string",
-                "format": "file-path",
-                "exists": true,
-                "pattern": "^([\\S\\s]*\\/)?[^\\s\\/]+\\.f(ast)?q\\.gz$",
-                "errorMessage": "FastQ file for reads 2 cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
+                "pattern": "^\\S+$",
+                "errorMessage": "study must be given and contain no spaces. It is the batch term used for between-study spread and batch correction.",
+                "meta": ["study"]
+            },
+            "run": {
+                "type": "string",
+                "pattern": "^\\S+$",
+                "errorMessage": "run must be given and contain no spaces. Use the sequencing flowcell from the read headers, not the ENA run accession.",
+                "meta": ["run"]
+            },
+            "age_cat": {
+                "type": "string",
+                "enum": ["20s", "30s", "40s", "50s", "60s", "70+"],
+                "errorMessage": "age_cat must be one of 20s, 30s, 40s, 50s, 60s, 70+ (American Gut's adult bands), or left empty",
+                "meta": ["age_cat"]
+            },
+            "sex": {
+                "type": "string",
+                "enum": ["male", "female", "other"],
+                "errorMessage": "sex must be male, female or other, or left empty",
+                "meta": ["sex"]
+            },
+            "bmi_cat": {
+                "type": "string",
+                "enum": ["Underweight", "Normal", "Overweight", "Obese"],
+                "errorMessage": "bmi_cat must be Underweight, Normal, Overweight or Obese (American Gut's bands), or left empty",
+                "meta": ["bmi_cat"]
+            },
+            "country": {
+                "type": "string",
+                "errorMessage": "country is free text and may be left empty",
+                "meta": ["country"]
             }
         },
-        "required": ["sample", "fastq_1"]
+        "required": ["sample", "role", "study", "run"]
     }
 }

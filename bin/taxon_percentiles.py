@@ -26,6 +26,13 @@ aligned count matrix before the transform, which is the transparent option. Baye
 multiplicative replacement is better-behaved for very sparse data; it is deliberately not
 used here because its behaviour is harder to explain in a report that has to be honest
 about its own uncertainty. The pseudocount used is written into the output.
+
+INPUT MODES
+-----------
+Pipeline mode:  --counts <genus x sample, all samples> --samplesheet <csv with sample,role>
+                The sheet decides which columns are personal and which are panel, which is
+                how a co-processed ampliseq run arrives: one table, both kinds of sample.
+Split mode:     --personal <table> --panel <table>   (kept for ad-hoc use)
 """
 
 import argparse
@@ -38,8 +45,10 @@ import pandas as pd
 def parse_args(argv=None):
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument('--personal', required=True, help='personal genus counts TSV (genus x sample)')
-    p.add_argument('--panel', required=True, help='panel genus counts TSV (genus x sample)')
+    p.add_argument('--counts', help='genus x sample counts for ALL samples (pipeline mode)')
+    p.add_argument('--samplesheet', help='samplesheet CSV with sample and role columns')
+    p.add_argument('--personal', help='personal genus counts TSV (split mode)')
+    p.add_argument('--panel', help='panel genus counts TSV (split mode)')
     p.add_argument('--prefix', default='out')
     p.add_argument('--pseudocount', type=float, default=0.5)
     p.add_argument('--min-prevalence', type=float, default=0.10,
@@ -50,7 +59,43 @@ def parse_args(argv=None):
                    help='exclude the Unassigned row from the composition. Off by default: '
                         'it is part of the composition and dropping it silently inflates '
                         'everything else.')
-    return p.parse_args(argv)
+    a = p.parse_args(argv)
+    pipeline_mode = a.counts is not None or a.samplesheet is not None
+    split_mode = a.personal is not None or a.panel is not None
+    if pipeline_mode == split_mode:
+        p.error('use either --counts with --samplesheet, or --personal with --panel')
+    if pipeline_mode and not (a.counts and a.samplesheet):
+        p.error('--counts and --samplesheet must be given together')
+    if split_mode and not (a.personal and a.panel):
+        p.error('--personal and --panel must be given together')
+    return a
+
+
+def split_by_role(counts, samplesheet_path):
+    """Split one genus x sample table into personal and panel columns via the sheet."""
+    sheet = pd.read_csv(samplesheet_path, dtype=str).fillna('')
+    for col in ('sample', 'role'):
+        if col not in sheet.columns:
+            sys.exit("FATAL: samplesheet has no '%s' column" % col)
+
+    wanted = set(sheet['sample'])
+    missing = sorted(wanted - set(counts.columns))
+    if missing:
+        sys.exit('FATAL: %d samplesheet sample(s) have no column in the counts table: %s\n'
+                 '       Sample names must match the ampliseq ASV table exactly.'
+                 % (len(missing), ', '.join(missing[:10]) + (' ...' if len(missing) > 10 else '')))
+    ignored = sorted(set(counts.columns) - wanted)
+    if ignored:
+        print('note: %d counts column(s) not in the samplesheet are ignored: %s'
+              % (len(ignored), ', '.join(ignored[:10])), file=sys.stderr)
+
+    personal_ids = list(sheet.loc[sheet['role'] == 'personal', 'sample'])
+    panel_ids = list(sheet.loc[sheet['role'] == 'panel', 'sample'])
+    if not personal_ids:
+        sys.exit('FATAL: the samplesheet has no personal samples')
+    if not panel_ids:
+        sys.exit('FATAL: the samplesheet has no panel samples')
+    return counts[personal_ids], counts[panel_ids]
 
 
 def clr(counts, pseudocount):
@@ -63,8 +108,12 @@ def clr(counts, pseudocount):
 def main(argv=None):
     a = parse_args(argv)
 
-    personal = pd.read_csv(a.personal, sep='\t', index_col=0)
-    panel = pd.read_csv(a.panel, sep='\t', index_col=0)
+    if a.counts:
+        counts = pd.read_csv(a.counts, sep='\t', index_col=0)
+        personal, panel = split_by_role(counts, a.samplesheet)
+    else:
+        personal = pd.read_csv(a.personal, sep='\t', index_col=0)
+        panel = pd.read_csv(a.panel, sep='\t', index_col=0)
 
     if a.drop_unassigned:
         personal = personal.drop(index='Unassigned', errors='ignore')
@@ -73,15 +122,15 @@ def main(argv=None):
     # Prevalence filter on the PANEL only -- filtering on the personal samples would
     # select features for being present in you, which is circular.
     prevalence = (panel > 0).sum(axis=1) / panel.shape[1]
-    keep = prevalence[prevalence >= a.min_prevalence].index
-    if len(keep) == 0:
+    shared = prevalence[prevalence >= a.min_prevalence].index
+    if len(shared) == 0:
         sys.exit('FATAL: no genera pass the %.0f%% panel prevalence filter'
                  % (100 * a.min_prevalence))
 
-    # Align to a shared feature set. Genera absent from one side become zeros, so both
-    # sides' geometric means are taken over the SAME parts -- otherwise the CLR values
-    # are not on a common scale and the percentiles are meaningless.
-    shared = keep.union(personal.index).intersection(keep)
+    # Align both sides to the SAME genus set, so each sample's geometric mean is taken over
+    # the same parts. Genera a personal sample lacks become zeros (then the pseudocount).
+    # Without this alignment the CLR values sit on different scales and every percentile
+    # is meaningless.
     panel_a = panel.reindex(shared).fillna(0)
     personal_a = personal.reindex(shared).fillna(0)
 
@@ -110,7 +159,7 @@ def main(argv=None):
                                          ascending=[True, False])
     out.to_csv('%s.taxon_percentiles.tsv' % a.prefix, sep='\t', index=False)
 
-    meta = pd.DataFrame([{
+    pd.DataFrame([{
         'pseudocount': a.pseudocount,
         'min_prevalence': a.min_prevalence,
         'drop_unassigned': a.drop_unassigned,
@@ -118,12 +167,10 @@ def main(argv=None):
         'n_genera_panel_total': panel.shape[0],
         'panel_samples': panel.shape[1],
         'personal_samples': personal.shape[1],
-    }])
-    meta.to_csv('%s.percentile_params.tsv' % a.prefix, sep='\t', index=False)
+    }]).to_csv('%s.percentile_params.tsv' % a.prefix, sep='\t', index=False)
 
     print('tested %d genera (of %d in panel) against %d panel samples'
           % (len(shared), panel.shape[0], panel.shape[1]))
-    print('wrote %s.taxon_percentiles.tsv' % a.prefix)
 
 
 if __name__ == '__main__':

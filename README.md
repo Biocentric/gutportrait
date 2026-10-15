@@ -1,5 +1,11 @@
 # gutportrait
 
+[![Nextflow](https://img.shields.io/badge/version-%E2%89%A525.10.4-green?style=flat&logo=nextflow&logoColor=white&color=%230DC09D&link=https%3A%2F%2Fnextflow.io)](https://www.nextflow.io/)
+[![nf-core template version](https://img.shields.io/badge/nf--core_template-4.1.0-green?style=flat&logo=nfcore&logoColor=white&color=%2324B064&link=https%3A%2F%2Fnf-co.re)](https://github.com/nf-core/tools/releases/tag/4.1.0)
+[![run with conda](http://img.shields.io/badge/run%20with-conda-3EB049?labelColor=000000&logo=anaconda)](https://docs.conda.io/en/latest/)
+[![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/)
+[![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/)
+
 **Cross-cohort comparison of personal 16S gut microbiome profiles.**
 
 `gutportrait` answers one question honestly: *where does this gut microbiome sit relative
@@ -9,9 +15,12 @@ It is a downstream companion to [`nf-core/ampliseq`](https://nf-co.re/ampliseq),
 replacement for it. **ampliseq turns reads into ASVs. gutportrait turns ASVs into a
 defensible comparison.** The two run side by side, and this README explains exactly how.
 
-> **Status: early development.** The upstream half is validated end-to-end (see
-> [Validation](#validation)); the gutportrait modules are being built. Nothing here is
-> medical advice and nothing it produces is diagnostic.
+> **Status: early development — first slice working.** The upstream half is validated
+> end-to-end on real data (see [Validation](#validation)). Of gutportrait itself, genus
+> collapse and per-genus CLR percentiles are implemented and pass the test profile; the
+> integration, the gates, cohort matching, deviation flags and the report are not built
+> yet (see [Implementation status](#implementation-status)). Nothing here is medical
+> advice and nothing it produces is diagnostic.
 
 ---
 
@@ -82,14 +91,16 @@ flowchart TD
 **The handoff is a directory, not a file format we invented.** gutportrait consumes
 ampliseq's published outputs and never touches a FASTQ:
 
-| ampliseq produces | gutportrait consumes it for |
-|---|---|
-| `dada2/ASV_table.tsv`, `ASV_seqs.fasta` | ASV-level input, phylogenetic placement |
-| `dada2/ASV_tax.*.tsv` | taxonomy, genus collapse |
-| `qiime2/abundance_tables/feature-table.biom` | count matrix |
-| `qiime2/rel_abundance_tables/rel-table-*.tsv` | rank-level relative abundance — **see the rank-numbering caveat below** |
-| `phyloseq/*.rds`, `treesummarizedexperiment/*.rds` | direct input to the R modules |
-| `qiime2/phylogenetic_tree/tree.nwk` | phylogenetic diversity |
+| ampliseq produces | gutportrait uses it for | |
+|---|---|---|
+| `dada2/ASV_table.tsv` | the count matrix: every sample, personal and panel | **used** |
+| `dada2/ASV_tax_species.<db>.tsv` | named-rank taxonomy for the genus collapse | **used** |
+| `dada2/ASV_seqs.fasta` | phylogenetic placement (V4-projected arm) | planned |
+| `qiime2/phylogenetic_tree/tree.nwk` | phylogenetic diversity | planned |
+| `phyloseq/*.rds`, `treesummarizedexperiment/*.rds` | direct input to the R modules | planned |
+
+`qiime2/rel_abundance_tables/rel-table-*.tsv` is deliberately **not** used — see the
+rank-numbering caveat below.
 
 Because the boundary is ampliseq's own published output, **you can run gutportrait on any
 ampliseq results directory** — not just ones produced by this project.
@@ -107,9 +118,9 @@ ampliseq results directory** — not just ones produced by this project.
 > | genus | `rel-table-6` | **not emitted** |
 >
 > gutportrait therefore does **not** read a pre-made genus table. It collapses to genus
-> itself from `dada2/ASV_tax_species.*.tsv` (or the `phyloseq` object's `tax_table`, which
-> carries named ranks and is immune to this) joined to the ASV table. Verified empirically
-> on ampliseq 2.18.0 with `--dada_ref_taxonomy sbdi-gtdb`.
+> itself from `dada2/ASV_tax_species.<db>.tsv`, whose columns are named ranks, joined to
+> the ASV table. Verified empirically on ampliseq 2.18.0 with
+> `--dada_ref_taxonomy sbdi-gtdb`.
 
 ---
 
@@ -124,7 +135,7 @@ models are estimated and merged (this is the samplesheet equivalent of
 
 ```tsv
 sample	fastq_1	fastq_2	run
-mmz_sample1	/data/s1_R1.fastq.gz	/data/s1_R2.fastq.gz	RUN_A
+self_sample1	/data/s1_R1.fastq.gz	/data/s1_R2.fastq.gz	RUN_A
 panel_ERR123	/data/ERR123_1.fastq.gz	/data/ERR123_2.fastq.gz	RUN_B
 ```
 
@@ -155,14 +166,34 @@ timepoints incomparable to each other.
 
 ### Step 2 — compare with gutportrait
 
+gutportrait takes its own samplesheet. It has one row per sample of the ampliseq run and
+says which samples are yours, which are the reference panel, and what is known about each:
+
+```csv
+sample,role,study,run,age_cat,sex,bmi_cat,country
+self_sample1,personal,self,RUN_A,40s,female,Normal,Netherlands
+panel_ERR123,panel,PRJEB00000,RUN_B,,,,
+```
+
+| column | required | meaning |
+|---|---|---|
+| `sample` | yes | must match a column of ampliseq's `ASV_table.tsv` exactly |
+| `role` | yes | `personal` or `panel` |
+| `study` | yes | the batch unit. Your samples get a study of their own — mixing roles within one study is an error |
+| `run` | yes | sequencing run, the same value as in the ampliseq samplesheet |
+| `age_cat`, `sex`, `bmi_cat`, `country` | no | used for cohort matching and the real-effect positive control. Leave empty where unknown, which is normal for ENA panels |
+
 ```bash
 nextflow run Biocentric/gutportrait -profile singularity \
-    --input samplesheet.csv \
+    --input gutportrait_samplesheet.csv \
     --ampliseq_results ampliseq_results/ \
-    --panel_manifest panel/manifest.tsv \
+    --taxonomy_db silva \
     --arm native \
     --outdir gutportrait_results
 ```
+
+No data yet? `-profile test,singularity` runs the whole pipeline on a synthetic dataset
+with known signals planted in it; see [docs/usage.md](docs/usage.md#test-profile).
 
 ---
 
@@ -176,17 +207,43 @@ nextflow run Biocentric/gutportrait -profile singularity \
 | **Deviate** | Extremes-only flags — very low diversity, single-taxon dominance, Proteobacteria bloom — measured against the panel's **between-study spread**, and raised only when both arms agree |
 | **Report** | Every number carries five things: value, technical uncertainty, reference *n*, evidence grade, and what it does not mean |
 
-### Two gates that can veto the report
+### Gates that can veto or demote the report
 
-Gates that fail loudly are what separate this from a dashboard.
+Gates that fail loudly are what separate this from a dashboard. Every threshold below is a
+parameter with a strict default, and the report states the values it used.
 
-- **Positive control** — the integrated dataset must recover an effect known to be strong
-  in the panel (age, sex, recent antibiotics). If merging and batch-correcting destroyed a
-  signal that is definitely there, the integration is broken and the run **stops with a
-  diagnostic instead of producing a report.**
-- **Batch dominance** — if variance explained by study or sequencing run exceeds that of
-  the biological variable being asked about, every population-facing claim is demoted to
-  *"orientation only"* and the report says so at the top, in those words.
+- **Positive control, injected.** A known effect is planted in a copy of the panel: one
+  high-prevalence genus is doubled in a random half of the samples, stratified by study,
+  and the integration is run again. If the planted effect does not come back (right sign,
+  p < 0.01, at least half its size), the run **stops with a diagnostic instead of
+  producing a report**. A correction that erases a signal we put there ourselves would
+  erase real ones too. This form needs no metadata, which most public panels lack.
+- **Positive control, real.** Where panel samples carry age bands, Shannon diversity
+  should rise with adult age. If correction destroys a relationship that was significant
+  before it, the run stops.
+- **Batch dominance.** A lifestyle contrast counts as a finding only if it explains more
+  variance than study does (PERMANOVA on Aitchison distance). A personal deviation counts
+  only if it is larger than the largest between-study difference in the panel. Anything
+  else is demoted to *"orientation only"*, and if study explains more than 10% of the
+  variance overall, the report says so at the top, in those words.
+
+---
+
+## Implementation status
+
+| Stage | Module | Status |
+|---|---|---|
+| Harmonise | `COLLAPSE_GENUS`: genus collapse from named-rank taxonomy; unassigned reads stay in as an explicit `Unassigned` row | ✅ implemented |
+| Harmonise | phylogenetic placement for the V4-projected arm | planned. First test whether ampliseq's own `--run_pplace` accepts a Greengenes2 backbone; if so, no module is needed |
+| Integrate | `BATCH_DIAGNOSE` (PERMANOVA variance partition), `BATCH_CORRECT` (MMUPHin) | planned |
+| Gates | `POSITIVE_CONTROL`, `BATCH_DOMINANCE` | planned |
+| Position | `TAXON_PERCENTILES`: per-genus CLR percentile of each personal sample against the panel | ✅ implemented, against the **whole, uncorrected** panel for now. Matching and correction arrive with Integrate |
+| Position | cohort matching, alpha/beta position, enterosignatures, lifestyle contrasts | planned |
+| Deviate | `DEVIATION_FLAGS` | planned |
+| Longitudinal | within-person noise floor, behind `--longitudinal` | planned |
+| Report | English, HTML and PDF | planned |
+
+Until the gates exist, a percentile from this pipeline is a position, not a finding.
 
 ---
 
@@ -229,8 +286,15 @@ to respect that asymmetry rather than paper over it.
 Built from the nf-core template and kept lint-clean:
 
 ```bash
+nextflow run . -profile test,singularity --outdir results_test   # synthetic end-to-end run
+nextflow lint .
 nf-core pipelines lint
 ```
+
+The test fixture is generated, not collected: `tests/fixtures/make_synthetic_fixture.py`
+writes it deterministically, with known signals planted for each stage to recover. No real
+personal data belongs in this repository, in tests or anywhere else; see
+[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md#pipeline-specific-contribution-guidelines).
 
 This pipeline follows nf-core conventions but is **not an official nf-core pipeline** — it
 is hosted under [Biocentric](https://github.com/Biocentric) and is not listed on nf-co.re.

@@ -1,0 +1,102 @@
+name: "taxon_percentiles"
+description: Position personal samples against a reference panel, per genus, in centred-log-ratio space
+keywords:
+  - microbiome
+  - 16S
+  - compositional
+  - percentile
+  - clr
+tools:
+  - "pandas":
+      description: "Powerful data structures for data analysis in Python"
+      homepage: "https://pandas.pydata.org"
+      documentation: "https://pandas.pydata.org/docs/"
+      licence: ["BSD-3-Clause"]
+      identifier: ""
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map with run information, e.g. `[ id:'native' ]`
+    - genus_counts:
+        type: file
+        description: |
+          Genus-by-sample count matrix for ALL samples of the ampliseq run (personal and
+          panel together), as produced by COLLAPSE_GENUS.
+        pattern: "*.genus_counts.tsv"
+  - samplesheet:
+      type: file
+      description: |
+        The validated pipeline samplesheet. Its `role` column decides which columns are
+        personal and which are panel. Every sample in the sheet must have a column in
+        the counts table.
+      pattern: "*.csv"
+
+output:
+  percentiles:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.taxon_percentiles.tsv":
+          type: file
+          description: |
+            One row per genus per personal sample: CLR value, percentile against the
+            panel, panel median, panel n and prevalence. Genera are prevalence-filtered on
+            the PANEL only, because filtering on the personal samples would be circular.
+          pattern: "*.taxon_percentiles.tsv"
+  params:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.percentile_params.tsv":
+          type: file
+          description: Pseudocount, prevalence threshold and sample counts used
+          pattern: "*.percentile_params.tsv"
+  versions_python:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "python":
+          type: string
+          description: The name of the tool
+      - 'python3 --version | sed "s/Python //"':
+          type: eval
+          description: The expression to obtain the version of the tool
+  versions_pandas:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "pandas":
+          type: string
+          description: The name of the tool
+      - 'python3 -c "import pandas; print(pandas.__version__)"':
+          type: eval
+          description: The expression to obtain the version of the tool
+  versions_numpy:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "numpy":
+          type: string
+          description: The name of the tool
+      - 'python3 -c "import numpy; print(numpy.__version__)"':
+          type: eval
+          description: The expression to obtain the version of the tool
+
+topics:
+  versions:
+    - - process:
+          type: string
+          description: The process the versions were collected from
+      - tool:
+          type: string
+          description: The tool name the version was collected for
+      - version:
+          type: string
+          description: The version of the tool
+
+authors:
+  - "@Biocentric"
+maintainers:
+  - "@Biocentric"

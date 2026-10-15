@@ -152,4 +152,28 @@ If you update images or graphics, follow the nf-core [style guidelines](https://
 
 ## Pipeline specific contribution guidelines
 
-<!-- TODO nf-core: Add any pipeline specific contribution guidelines here, such as coding styles, procedures, checklists etc. -->
+### No personal data, ever
+
+This repository is public, and the pipeline exists to analyse one person's microbiome.
+Nothing derived from a real person goes into it: no reads, ASV tables or sample IDs, no
+checksums of them, and no metadata, not even banded values. Test data is synthetic and
+comes from `tests/fixtures/make_synthetic_fixture.py`. If a test needs a new signal,
+plant it in the generator and regenerate. Never edit the fixture files by hand.
+
+### Keep ampliseq upstream
+
+nf-core/ampliseq is run separately, pinned and unmodified. Don't vendor its modules or
+re-implement its steps here. If a change belongs in sequence processing, it belongs in a
+pull request to nf-core/ampliseq.
+
+### Read named ranks only
+
+Take taxonomy from `dada2/ASV_tax_species.<db>.tsv`, which has named rank columns. Never
+use ampliseq's `rel-table-N.tsv` files: their numbering is positional and changes meaning
+with the reference database.
+
+### Every new statistic needs a known answer
+
+A module that computes a position, a correction or a gate also adds a planted signal to
+the fixture that it must recover, and a test that checks it does. Every threshold is a
+parameter with a strict default, and the value used is written to the output.

@@ -8,11 +8,44 @@
 
 > Di Tommaso P, Chatzou M, Floden EW, Barja PP, Palumbo E, Notredame C. Nextflow enables reproducible computational workflows. Nat Biotechnol. 2017 Apr 11;35(4):316-319. doi: 10.1038/nbt.3820. PubMed PMID: 28398311.
 
+## Upstream: sequence processing
+
+gutportrait reads the output of an nf-core/ampliseq run, so cite ampliseq and the tools
+that produced your ASV table. See the
+[ampliseq citations](https://github.com/nf-core/ampliseq/blob/master/CITATIONS.md) for the
+full list for the version you ran.
+
+- [nf-core/ampliseq](https://pubmed.ncbi.nlm.nih.gov/33193131/)
+
+  > Straub D, Blackwell N, Langarica-Fuentes A, Peltzer A, Nahnsen S, Kleindienst S. Interpretations of Environmental Microbial Community Studies Are Biased by the Selected 16S rRNA (Gene) Amplicon Sequencing Pipeline. Front Microbiol. 2020 Oct 23;11:550420. doi: 10.3389/fmicb.2020.550420. PubMed PMID: 33193131; PubMed Central PMCID: PMC7645116.
+
+- [DADA2](https://pubmed.ncbi.nlm.nih.gov/27214047/)
+
+  > Callahan BJ, McMurdie PJ, Rosen MJ, Han AW, Johnson AJ, Holmes SP. DADA2: High-resolution sample inference from Illumina amplicon data. Nat Methods. 2016 Jul;13(7):581-3. doi: 10.1038/nmeth.3869. PubMed PMID: 27214047; PubMed Central PMCID: PMC4927377.
+
+- [SILVA](https://pubmed.ncbi.nlm.nih.gov/23193283/)
+
+  > Quast C, Pruesse E, Yilmaz P, Gerken J, Schweer T, Yarza P, Peplies J, Glöckner FO. The SILVA ribosomal RNA gene database project: improved data processing and web-based tools. Nucleic Acids Res. 2013 Jan;41(Database issue):D590-6. doi: 10.1093/nar/gks1219. PubMed PMID: 23193283; PubMed Central PMCID: PMC3531112.
+
 ## Pipeline tools
+
+- [pandas](https://doi.org/10.25080/Majora-92bf1922-00a)
+
+  > McKinney W. Data Structures for Statistical Computing in Python. Proceedings of the 9th Python in Science Conference. 2010:56-61. doi: 10.25080/Majora-92bf1922-00a.
+
+- [NumPy](https://pubmed.ncbi.nlm.nih.gov/32939066/)
+
+  > Harris CR, Millman KJ, van der Walt SJ, et al. Array programming with NumPy. Nature. 2020 Sep;585(7825):357-362. doi: 10.1038/s41586-020-2649-2. PubMed PMID: 32939066; PubMed Central PMCID: PMC7759461.
 
 - [MultiQC](https://pubmed.ncbi.nlm.nih.gov/27312411/)
 
 > Ewels P, Magnusson M, Lundin S, Käller M. MultiQC: summarize analysis results for multiple tools and samples in a single report. Bioinformatics. 2016 Oct 1;32(19):3047-8. doi: 10.1093/bioinformatics/btw354. Epub 2016 Jun 16. PubMed PMID: 27312411; PubMed Central PMCID: PMC5039924.
+
+## Methods
+
+- [Compositional data analysis of microbiome data](https://pubmed.ncbi.nlm.nih.gov/29187837/)
+
+  > Gloor GB, Macklaim JM, Pawlowsky-Glahn V, Egozcue JJ. Microbiome Datasets Are Compositional: And This Is Not Optional. Front Microbiol. 2017 Nov 15;8:2224. doi: 10.3389/fmicb.2017.02224. PubMed PMID: 29187837; PubMed Central PMCID: PMC5695134.
 
 ## Software packaging/containerisation tools
 

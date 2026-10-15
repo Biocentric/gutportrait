@@ -1,0 +1,52 @@
+{
+    "-profile test": {
+        "content": [
+            {
+                "COLLAPSE_GENUS": {
+                    "pandas": "2.2.1",
+                    "python": "3.12.3"
+                },
+                "TAXON_PERCENTILES": {
+                    "numpy": "1.26.4",
+                    "pandas": "2.2.1",
+                    "python": "3.12.3"
+                },
+                "Workflow": {
+                    "Biocentric/gutportrait": "v1.0.0dev"
+                }
+            },
+            [
+                "genus",
+                "genus/native.collapse_stats.tsv",
+                "genus/native.genus_counts.tsv",
+                "multiqc",
+                "multiqc/multiqc_data",
+                "multiqc/multiqc_data/llms-full.txt",
+                "multiqc/multiqc_data/multiqc.log",
+                "multiqc/multiqc_data/multiqc.parquet",
+                "multiqc/multiqc_data/multiqc_citations.txt",
+                "multiqc/multiqc_data/multiqc_data.json",
+                "multiqc/multiqc_data/multiqc_software_versions.txt",
+                "multiqc/multiqc_data/multiqc_sources.txt",
+                "multiqc/multiqc_report.html",
+                "percentiles",
+                "percentiles/native.percentile_params.tsv",
+                "percentiles/native.taxon_percentiles.tsv",
+                "pipeline_info",
+                "pipeline_info/gutportrait_software_mqc_versions.yml"
+            ],
+            [
+                "native.collapse_stats.tsv:md5,f658390a79a8dd5181130ebc4b90b961",
+                "native.genus_counts.tsv:md5,9ef003305a6d10070b9a2c58aa0c56fd",
+                "multiqc_citations.txt:md5,4c806e63a283ec1b7e78cdae3a923d4f",
+                "native.percentile_params.tsv:md5,2dc2fb756866a94001fe5d3baab354c0",
+                "native.taxon_percentiles.tsv:md5,21ba91c8654ee14be1c1c76a2d8245b4"
+            ]
+        ],
+        "timestamp": "2026-10-15T16:52:42.920083731",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.04.3"
+        }
+    }
+}
