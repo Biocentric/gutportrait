@@ -1,0 +1,50 @@
+{
+    "synthetic fixture without the batch tables: findings explained, missing checks named": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.report.html:md5,817d64299987546c04a00b9492dbf102"
+                ]
+            ],
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.report.pdf:md5,de658b228b31b7e69dd15e29a8323610"
+                ]
+            ],
+            {
+                "versions_matplotlib": [
+                    [
+                        "REPORT",
+                        "matplotlib",
+                        "3.10.3"
+                    ]
+                ],
+                "versions_pandas": [
+                    [
+                        "REPORT",
+                        "pandas",
+                        "2.2.3"
+                    ]
+                ],
+                "versions_python": [
+                    [
+                        "REPORT",
+                        "python",
+                        "3.13.3"
+                    ]
+                ]
+            }
+        ],
+        "timestamp": "2026-10-18T20:14:49.79981767",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.04.3"
+        }
+    }
+}

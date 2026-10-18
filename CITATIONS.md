@@ -33,6 +33,10 @@ full list for the version you ran.
 
   > McKinney W. Data Structures for Statistical Computing in Python. Proceedings of the 9th Python in Science Conference. 2010:56-61. doi: 10.25080/Majora-92bf1922-00a.
 
+- [Matplotlib](https://doi.org/10.1109/MCSE.2007.55)
+
+  > Hunter JD. Matplotlib: A 2D Graphics Environment. Computing in Science & Engineering. 2007;9(3):90-95. doi: 10.1109/MCSE.2007.55.
+
 - [NumPy](https://pubmed.ncbi.nlm.nih.gov/32939066/)
 
   > Harris CR, Millman KJ, van der Walt SJ, et al. Array programming with NumPy. Nature. 2020 Sep;585(7825):357-362. doi: 10.1038/s41586-020-2649-2. PubMed PMID: 32939066; PubMed Central PMCID: PMC7759461.

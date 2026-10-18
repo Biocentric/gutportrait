@@ -65,6 +65,12 @@ Initial release of Biocentric/gutportrait, created with the [nf-core](https://nf
   a repeat sample; read tracking (`overall_summary.tsv`) with one technical outlier; and two
   more samplesheets, one without repeats and one with a sample mix-up.
 
+- `REPORT`: the plain-language report, as one self-contained HTML page and an A4 PDF from
+  the same content. Caveats first; every section says what it shows, gives the result in
+  words, and ends with what it does not mean; a confidence label per section is set by the
+  gates; a glossary closes it. Charts are drawn once with matplotlib and embedded as SVG in
+  the HTML. Both files are reproducible byte for byte.
+
 ### `Changed`
 
 - `beta_outlier` compares a sample with the panel's leave-one-out distances to its centroid,
@@ -78,5 +84,6 @@ Initial release of Biocentric/gutportrait, created with the [nf-core](https://nf
 
 - `r-vegan` 2.7.5 (R 4.5.3) for `BATCH_DIAGNOSE`.
 - `bioconductor-mmuphin` 1.16.0 (R 4.3.2) for `BATCH_CORRECT` and `POSITIVE_CONTROL`.
+- `seaborn` 0.13.2 container (matplotlib 3.10.3, pandas 2.2.3) for `REPORT`.
 
 ### `Deprecated`

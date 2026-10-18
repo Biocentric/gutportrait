@@ -16,6 +16,7 @@ directory.
 
 The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes data using the following steps:
 
+- [Report](#report) - **start here**: every result below, explained in plain language, as HTML and PDF
 - [Genus tables](#genus-tables) - ASV counts collapsed to genus, with unassigned reads accounted for
 - [Taxon percentiles](#taxon-percentiles) - where each personal sample sits in the panel, per genus, in CLR space
 - [Batch diagnosis](#batch-diagnosis) - how much of the panel's variation is study, and how much each metadata variable
@@ -28,6 +29,46 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 - [Technical comparability](#technical-comparability) - whether your samples were processed like the panel's, step by step
 - [MultiQC](#multiqc) - software versions, parameters and the methods text
 - [Pipeline information](#pipeline-information) - Report metrics generated during the workflow execution
+
+### Report
+
+<details markdown="1">
+<summary>Output files</summary>
+
+- `report/`
+  - `<arm>.report.html`: the report as one self-contained page (styles and charts inline, no
+    external files, scripts or internet needed). Open it in any browser.
+  - `<arm>.report.pdf`: the same report as an A4 PDF.
+
+</details>
+
+The report is written for a reader who knows what a gut microbiome is, but not what a centred
+log-ratio is. It explains every table in this document:
+
+- **Read this first** comes before any result: what 16S sequencing can and cannot see, what
+  the report does not do (diagnose, score health, advise on diet), and the caveats of this
+  particular run, decided by the gates (for example, a profile within the laboratory spread,
+  an unmatched panel, or samples processed differently from the panel).
+- **At a glance** answers seven questions in one sentence each, from "are your samples from
+  one person?" to "were they processed like the reference samples?".
+- Each later section (diversity, overall position, genus by genus, checks for gross
+  abnormalities, changes between your samples, technical comparability, how far the panel
+  can be trusted) says what it shows, gives your result in words, shows a chart, and ends
+  with **what it does not mean**.
+- Every section carries a **confidence label**, set by the pipeline's own gates rather than
+  by wording: _Solid_ (a technical result unlikely to change), _Indicative_ (a real
+  comparison with a known limit), _Orientation only_ (a position that laboratory or study
+  differences could explain) or _Screening_ (a check for gross problems, provisional).
+- A glossary and the settings used close the report.
+
+Charts use one visual language throughout: a grey bar for the middle 90% of the reference,
+a dark tick for its median, and numbered, coloured markers for your samples. Sections whose
+tables are missing say so instead of failing. Nothing in either file depends on the date, so
+a re-run gives identical files.
+
+> [!WARNING]
+> The report contains your sample names and the `context` labels from your samplesheet.
+> Treat it as personal data.
 
 ### Genus tables
 

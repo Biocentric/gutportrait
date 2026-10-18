@@ -15,11 +15,12 @@ It is a downstream companion to [`nf-core/ampliseq`](https://nf-co.re/ampliseq),
 replacement for it. **ampliseq turns reads into ASVs. gutportrait turns ASVs into a
 defensible comparison.** The two run side by side, and this README explains exactly how.
 
-> **Status: early development — third slice working.** The upstream half is validated
+> **Status: early development — first end-to-end version.** The upstream half is validated
 > end-to-end on real data (see [Validation](#validation)). Of gutportrait itself, genus
 > collapse, per-genus CLR percentiles, alpha diversity, batch diagnosis and correction, both
-> gates, a stability check and the deviation flags are implemented and pass the test
-> profile. Cohort matching and the report are not built yet (see
+> gates, a stability check, calibrated deviation flags, within-person change, technical
+> comparability and the plain-language report are implemented and pass the test profile.
+> Cohort matching and the V4-projected arm are not built yet (see
 > [Implementation status](#implementation-status)). Nothing here is medical advice and
 > nothing it produces is diagnostic.
 
@@ -253,7 +254,7 @@ parameter with a strict default, and the report states the values it used.
 | Deviate      | `DEVIATION_FLAGS`: the extremes-only checks of DECISIONS.md D12, each calibrated on the panel (leave-one-out)       | ✅ implemented, single-arm: the cross-arm agreement rule needs both arms                                             |
 | Gates        | `TECHNICAL_QC`: read retention at every ampliseq step, against the panel                                            | ✅ implemented                                                                                                       |
 | Longitudinal | `WITHIN_PERSON`: changes between your samples against a noise floor borrowed from panel repeat samples; identity    | ✅ implemented                                                                                                       |
-| Report       | English, HTML and PDF                                                                                               | planned                                                                                                              |
+| Report       | `REPORT`: plain-language HTML and PDF; caveats first, a confidence label per section, a glossary                    | ✅ implemented                                                                                                       |
 
 Until the gates exist, a percentile from this pipeline is a position, not a finding.
 

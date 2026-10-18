@@ -14,6 +14,7 @@ include { BATCH_DOMINANCE        } from '../modules/local/batch_dominance/main'
 include { PERCENTILE_STABILITY   } from '../modules/local/percentile_stability/main'
 include { WITHIN_PERSON          } from '../modules/local/within_person/main'
 include { TECHNICAL_QC           } from '../modules/local/technical_qc/main'
+include { REPORT                 } from '../modules/local/report/main'
 include { TAXON_PERCENTILES as TAXON_PERCENTILES_CORRECTED } from '../modules/local/taxon_percentiles/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
@@ -141,6 +142,34 @@ workflow GUTPORTRAIT {
     TECHNICAL_QC (
         COLLAPSE_GENUS.out.stats.map { meta, stats -> [ meta, read_tracking, stats ] },
         ch_samplesheet
+    )
+
+    //
+    // STAGE 6 - REPORT: every table above, explained in plain language, as HTML and PDF.
+    // A failed positive control stops the run before this point, so no report is written
+    // on a correction that erases real effects.
+    //
+    def ch_report_tables = channel.empty()
+        .mix(
+            COLLAPSE_GENUS.out.counts, COLLAPSE_GENUS.out.stats,
+            TAXON_PERCENTILES.out.percentiles, TAXON_PERCENTILES.out.params,
+            TAXON_PERCENTILES_CORRECTED.out.percentiles, TAXON_PERCENTILES_CORRECTED.out.params,
+            PERCENTILE_STABILITY.out.stability,
+            BATCH_DIAGNOSE.out.permanova, BATCH_DIAGNOSE.out.summary,
+            BATCH_CORRECT.out.summary, POSITIVE_CONTROL.out.result, BATCH_DOMINANCE.out.gates,
+            ALPHA_DIVERSITY.out.alpha, ALPHA_DIVERSITY.out.position, ALPHA_DIVERSITY.out.params,
+            DEVIATION_FLAGS.out.flags, DEVIATION_FLAGS.out.calibration,
+            WITHIN_PERSON.out.reference, WITHIN_PERSON.out.summary, WITHIN_PERSON.out.changes,
+            WITHIN_PERSON.out.genus_changes, WITHIN_PERSON.out.identity,
+            TECHNICAL_QC.out.metrics, TECHNICAL_QC.out.qc
+        )
+        .map { _meta, table -> table }
+        .collect()
+        .map { tables -> [ [ id: arm ], tables ] }
+    REPORT (
+        ch_report_tables,
+        ch_samplesheet,
+        workflow.manifest.version
     )
 
     //

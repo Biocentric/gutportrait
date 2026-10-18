@@ -1,0 +1,100 @@
+nextflow_process {
+
+    name "Test Process REPORT"
+    script "../main.nf"
+    process "REPORT"
+
+    tag "modules"
+    tag "modules_local"
+    tag "report"
+
+    test("synthetic fixture without the batch tables: findings explained, missing checks named") {
+
+        setup {
+            run("COLLAPSE_GENUS") {
+                script "../../collapse_genus/main.nf"
+                process {
+                    """
+                    input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true), file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_tax_species.silva.tsv", checkIfExists: true) ])
+                    """
+                }
+            }
+            run("ALPHA_DIVERSITY") {
+                script "../../alpha_diversity/main.nf"
+                process {
+                    """
+                    input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true) ])
+                    input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet.csv", checkIfExists: true)
+                    """
+                }
+            }
+            run("TAXON_PERCENTILES") {
+                script "../../taxon_percentiles/main.nf"
+                process {
+                    """
+                    input[0] = COLLAPSE_GENUS.out.counts
+                    input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet.csv", checkIfExists: true)
+                    """
+                }
+            }
+            run("DEVIATION_FLAGS") {
+                script "../../deviation_flags/main.nf"
+                process {
+                    """
+                    input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true), file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_tax_species.silva.tsv", checkIfExists: true) ]).join(ALPHA_DIVERSITY.out.alpha)
+                    input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet.csv", checkIfExists: true)
+                    """
+                }
+            }
+            run("WITHIN_PERSON") {
+                script "../../within_person/main.nf"
+                process {
+                    """
+                    input[0] = COLLAPSE_GENUS.out.counts.join(ALPHA_DIVERSITY.out.alpha)
+                    input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet.csv", checkIfExists: true)
+                    """
+                }
+            }
+            run("TECHNICAL_QC") {
+                script "../../technical_qc/main.nf"
+                process {
+                    """
+                    input[0] = COLLAPSE_GENUS.out.stats.map { meta, stats -> [ meta, file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/overall_summary.tsv", checkIfExists: true), stats ] }
+                    input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet.csv", checkIfExists: true)
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = channel.empty()
+                    .mix(COLLAPSE_GENUS.out.counts, COLLAPSE_GENUS.out.stats, TAXON_PERCENTILES.out.percentiles, TAXON_PERCENTILES.out.params, ALPHA_DIVERSITY.out.alpha, ALPHA_DIVERSITY.out.position, ALPHA_DIVERSITY.out.params, DEVIATION_FLAGS.out.flags, DEVIATION_FLAGS.out.calibration, WITHIN_PERSON.out.reference, WITHIN_PERSON.out.summary, WITHIN_PERSON.out.changes, WITHIN_PERSON.out.genus_changes, WITHIN_PERSON.out.identity, TECHNICAL_QC.out.metrics, TECHNICAL_QC.out.qc)
+                    .map { _meta, table -> table }
+                    .collect()
+                    .map { tables -> [ [ id: 'native' ], tables ] }
+                input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet.csv", checkIfExists: true)
+                input[2] = '1.0.0dev'
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def html = path(process.out.html.get(0).get(1)).text
+            assert html.contains('Your gut microbiome, compared')
+            assert html.contains('What this report does not do')
+            assert html.contains('Yes. Every pair of samples is as alike as two samples of one person.')
+            assert html.contains('Enterobacteriaceae bloom')
+            assert html.contains('The study-difference checks are missing from this run')
+            assert html.contains('kept overall')
+            assert new String(path(process.out.pdf.get(0).get(1)).bytes, 0, 4, 'US-ASCII') == '%PDF'
+            assert snapshot(
+                process.out.html,
+                process.out.pdf,
+                process.out.findAll { key, val -> key.toString().startsWith('versions') }
+            ).match()
+        }
+    }
+}

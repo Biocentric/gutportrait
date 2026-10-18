@@ -1,0 +1,102 @@
+name: "report"
+description: "The plain-language report - every result table of the run, explained for a mildly informed reader, as HTML and PDF"
+keywords:
+  - microbiome
+  - report
+  - html
+  - pdf
+tools:
+  - "matplotlib":
+      description: "Comprehensive library for creating static, animated, and interactive visualizations in Python"
+      homepage: "https://matplotlib.org"
+      documentation: "https://matplotlib.org/stable/"
+      licence: ["PSF"]
+      identifier: ""
+  - "pandas":
+      description: "Powerful data structures for data analysis in Python"
+      homepage: "https://pandas.pydata.org"
+      documentation: "https://pandas.pydata.org/docs/"
+      licence: ["BSD-3-Clause"]
+      identifier: ""
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map with run information, e.g. `[ id:'native' ]`
+    - tables:
+        type: file
+        description: Every result table of the run (genus, percentiles, batch, gates, alpha, flags, within-person, technical QC); sections whose tables are missing say so
+        pattern: "*.tsv"
+  - samplesheet:
+      type: file
+      description: The validated pipeline samplesheet
+      pattern: "*.csv"
+  - pipeline_version:
+      type: string
+      description: The pipeline version, printed in the report header
+
+output:
+  html:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.report.html":
+          type: file
+          description: Self-contained HTML report (inline CSS and SVG charts, no external files or scripts)
+          pattern: "*.report.html"
+  pdf:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.report.pdf":
+          type: file
+          description: The same report as an A4 PDF
+          pattern: "*.report.pdf"
+  versions_python:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "python":
+          type: string
+          description: The name of the tool
+      - 'python3 --version | sed "s/Python //"':
+          type: eval
+          description: The expression to obtain the version of the tool
+  versions_matplotlib:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "matplotlib":
+          type: string
+          description: The name of the tool
+      - 'python3 -c "import matplotlib; print(matplotlib.__version__)"':
+          type: eval
+          description: The expression to obtain the version of the tool
+  versions_pandas:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "pandas":
+          type: string
+          description: The name of the tool
+      - 'python3 -c "import pandas; print(pandas.__version__)"':
+          type: eval
+          description: The expression to obtain the version of the tool
+
+topics:
+  versions:
+    - - process:
+          type: string
+          description: The process the versions were collected from
+      - tool:
+          type: string
+          description: The tool name the version was collected for
+      - version:
+          type: string
+          description: The version of the tool
+
+authors:
+  - "@Biocentric"
+maintainers:
+  - "@Biocentric"
