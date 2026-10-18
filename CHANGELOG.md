@@ -51,9 +51,10 @@ Initial release of Biocentric/gutportrait, created with the [nf-core](https://nf
 - `WITHIN_PERSON`: differences between the personal samples against a noise floor borrowed
   from the panel's repeat pairs (distance percentiles, change in Shannon diversity, per-genus
   change in units of its ordinary within-person change, with a leave-one-out count of what
-  changes by chance), and a sample-identity check that tells a large change in a few genera
-  from a different person (`--change_z`, `--min_reference_pairs`,
-  `--identity_within_percentile`, `--identity_between_percentile`).
+  changes by chance; an absence counts only where the shallower sample could have detected
+  the genus), and a sample-identity check that tells a large change in a few genera from a
+  different person (`--change_z`, `--min_reference_pairs`, `--identity_within_percentile`,
+  `--identity_between_percentile`).
 - `TECHNICAL_QC`: retention at every step of ampliseq's read tracking, analysed reads and the
   unassigned fraction, against the panel; atypical beyond a modified z-score of `--qc_max_z`
   against the pooled panel and every study.

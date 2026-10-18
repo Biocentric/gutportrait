@@ -48,6 +48,13 @@ pass that by chance in anyone, so the same count is made for every reference pai
 measured against the other pairs (leave-one-out): `genera_changed_expected` is what a
 typical person shows between two samples.
 
+A genus seen in one sample and absent from the other is only compared when the other
+sample was deep enough to have seen it: at the abundance it had in the first sample, it
+must predict at least --min-detectable reads there (5 by default, a Poisson chance of
+missing it of 0.7%). Otherwise its absence says more about sequencing depth than about the
+gut, and it is counted under `genera_not_comparable` instead. The same rule applies to the
+reference pairs, so both sides are counted alike.
+
 IDENTITY RULE
 -------------
 You sent in your own samples, so "one person" is the starting assumption, and the check
@@ -94,6 +101,8 @@ def parse_args(argv=None):
     p.add_argument('--identity-between-pct', type=float, default=5.0)
     p.add_argument('--trim', type=float, default=0.05,
                    help='share of the most-changed genera left out of the trimmed distance')
+    p.add_argument('--min-detectable', type=float, default=5.0,
+                   help='reads a genus must be expected to have in a sample for its absence there to count')
     return p.parse_args(argv)
 
 
@@ -171,7 +180,17 @@ def main(argv=None):
     genera = [g for g in kept if g != 'Unassigned']
     C = clr.loc[genera]
     P = counts.loc[genera] > 0
+    depth = counts.sum(axis=0).astype(float)
+    R = counts.loc[genera].div(depth.replace(0, np.nan), axis=1).fillna(0.0)
     n_trim = max(1, int(round(a.trim * len(kept))))
+
+    def comparable(A, B):
+        """genus x pair: seen in both, or seen in one where the other could have seen it."""
+        pa, pb = P[A].to_numpy(), P[B].to_numpy()
+        ra, rb = R[A].to_numpy(), R[B].to_numpy()
+        da, db = depth[A].to_numpy(), depth[B].to_numpy()
+        return (pa & pb) | (pa & ~pb & (ra * db >= a.min_detectable)) | \
+               (~pa & pb & (rb * da >= a.min_detectable))
 
     def dist(x, y):
         return float(np.linalg.norm(clr[x] - clr[y]))
@@ -211,7 +230,7 @@ def main(argv=None):
     if len(ref):
         A, B = list(ref['sample_a']), list(ref['sample_b'])
         dclr = C[B].to_numpy() - C[A].to_numpy()                       # genus x pair
-        seen = P[A].to_numpy() | P[B].to_numpy()
+        seen = comparable(A, B)
         sq = np.where(seen, dclr ** 2, 0.0)
         s_tot, n_tot = sq.sum(axis=1), seen.sum(axis=1)
         ok = n_tot >= a.min_pairs
@@ -228,6 +247,8 @@ def main(argv=None):
     sh_sd = float(np.sqrt(np.mean(dsh ** 2))) if len(dsh) else np.nan
     loo_counts = ref['genera_changed_loo'].to_numpy(dtype=float)
     same_run_share = float(ref['same_run'].mean()) if len(ref) else np.nan
+    ref_depths = depth[sorted(set(ref['sample_a']) | set(ref['sample_b']))].to_numpy()
+    shallow = float(np.percentile(ref_depths, 5)) if len(ref_depths) else np.nan
 
     out = ref.copy()
     for col in ('aitchison', 'trimmed_distance', 'delta_shannon'):
@@ -255,19 +276,30 @@ def main(argv=None):
     for x, y in pairs:
         d, t = dist(x, y), trimmed(x, y)
         same_run = sheet.at[x, 'run'] == sheet.at[y, 'run']
-        caveat = ''
+        caveats = []
         if not have_ref:
-            caveat = ('fewer than %d reference pairs: no within-person reference (add repeat samples)'
-                      % a.min_pairs)
-        elif not same_run and same_run_share > 0.5:
-            caveat = ('sequenced in different runs, while %.0f%% of the reference pairs share a run: '
-                      'part of this difference may be run-to-run technical variation'
-                      % (100 * same_run_share))
+            caveats.append('fewer than %d reference pairs: no within-person reference (add repeat samples)'
+                           % a.min_pairs)
+        else:
+            if not same_run and same_run_share > 0.5:
+                caveats.append('sequenced in different runs, while %.0f%% of the reference pairs share a '
+                               'run: part of this difference may be run-to-run technical variation'
+                               % (100 * same_run_share))
+            low = [s for s in (x, y) if depth[s] < shallow]
+            if low:
+                caveats.append('%s %s fewer reads (%s) than 95%% of the reference samples: rare genera '
+                               'were compared only where the shallower sample could have detected them'
+                               % (' and '.join(low), 'have' if len(low) > 1 else 'has',
+                                  ' and '.join('%d' % depth[s] for s in low)))
+        caveat = '; '.join(caveats)
         dsx = float(shannon[y] - shannon[x])
         n_changed, n_tested = 0, 0
+        ok_pair = comparable([x], [y])[:, 0]
+        seen_pair = (P[x] | P[y]).to_numpy()
+        n_not_comparable = int((seen_pair & ~ok_pair).sum())
         if have_ref:
             for gi, g in enumerate(genera):
-                if not (P.at[g, x] or P.at[g, y]) or not np.isfinite(sd[gi]) or sd[gi] == 0:
+                if not ok_pair[gi] or not np.isfinite(sd[gi]) or sd[gi] == 0:
                     continue
                 n_tested += 1
                 delta = float(C.at[g, y] - C.at[g, x])
@@ -285,7 +317,7 @@ def main(argv=None):
         changes.append({
             'sample_a': x, 'sample_b': y,
             'context_a': sheet.at[x, 'context'], 'context_b': sheet.at[y, 'context'],
-            'same_run': same_run, 'aitchison': rnd(d),
+            'same_run': same_run, 'reads_a': int(depth[x]), 'reads_b': int(depth[y]), 'aitchison': rnd(d),
             'within_person_percentile': rnd(full.within_pct(d), 1),
             'between_person_percentile': rnd(full.between_pct(d), 1),
             'reference_pairs': len(ref),
@@ -295,6 +327,7 @@ def main(argv=None):
             'delta_shannon_z': rnd(dsx / sh_sd, 2) if sh_ok else '',
             'delta_shannon_percentile': rnd(pct(np.abs(dsh), abs(dsx)), 1) if sh_ok else '',
             'genera_tested': n_tested if have_ref else '',
+            'genera_not_comparable': n_not_comparable,
             'genera_changed': n_changed if have_ref else '',
             'genera_changed_expected': rnd(np.median(loo_counts), 1) if have_ref else '',
             'genera_changed_percentile': rnd(pct(loo_counts, n_changed), 1) if have_ref else '',
@@ -348,11 +381,12 @@ def main(argv=None):
                   'verdict': overall, 'detail': why})
 
     pd.DataFrame(changes, columns=[
-        'sample_a', 'sample_b', 'context_a', 'context_b', 'same_run', 'aitchison',
+        'sample_a', 'sample_b', 'context_a', 'context_b', 'same_run', 'reads_a', 'reads_b', 'aitchison',
         'within_person_percentile', 'between_person_percentile', 'reference_pairs',
         'reference_within_median', 'reference_between_median', 'delta_shannon', 'delta_shannon_z',
-        'delta_shannon_percentile', 'genera_tested', 'genera_changed', 'genera_changed_expected',
-        'genera_changed_percentile', 'caveat']).to_csv('%s.personal_changes.tsv' % a.prefix, sep='\t', index=False)
+        'delta_shannon_percentile', 'genera_tested', 'genera_not_comparable', 'genera_changed',
+        'genera_changed_expected', 'genera_changed_percentile',
+        'caveat']).to_csv('%s.personal_changes.tsv' % a.prefix, sep='\t', index=False)
     gc = pd.DataFrame(gchanges, columns=[
         'sample_a', 'sample_b', 'genus', 'changed', 'direction', 'z', 'delta_clr', 'ordinary_change_sd',
         'rel_abundance_a', 'rel_abundance_b', 'reference_pairs'])

@@ -281,10 +281,11 @@ How to read it:
     each pair measured against the others.
   - `<arm>.within_person_summary.tsv`: the within-person and between-person distributions of
     both distances, pooled and per study.
-  - `<arm>.personal_changes.tsv`: one row per pair of your samples: the Aitchison distance
-    with its `within_person_percentile` and `between_person_percentile`, the change in
-    Shannon diversity (`delta_shannon`, with a z-score and a percentile against the
-    reference pairs), `genera_changed` against `genera_changed_expected`, and a `caveat`.
+  - `<arm>.personal_changes.tsv`: one row per pair of your samples: the reads of both, the
+    Aitchison distance with its `within_person_percentile` and `between_person_percentile`,
+    the change in Shannon diversity (`delta_shannon`, with a z-score and a percentile
+    against the reference pairs), `genera_changed` against `genera_changed_expected`,
+    `genera_not_comparable`, and a `caveat`.
   - `<arm>.personal_genus_changes.tsv`: per pair and genus: `z`, the change in CLR abundance
     in units of that genus's ordinary within-person change (`ordinary_change_sd`); `changed`
     when |z| exceeds `--change_z`; the direction and both relative abundances.
@@ -308,8 +309,12 @@ How to read `personal_changes.tsv`:
 - `genera_changed` counts genera that moved more than `--change_z` times their ordinary
   change. Some always do, by chance: `genera_changed_expected` is the median for a
   reference person, and `genera_changed_percentile` places your count among theirs.
+- A genus seen in one sample and absent from the other counts only if the other sample was
+  deep enough to see it: at its abundance in the first, at least 5 expected reads. Others
+  are counted under `genera_not_comparable`, because their absence may be depth alone.
 - The `caveat` notes when your two samples were sequenced in different runs while most
-  reference pairs were not: part of the difference may then be technical.
+  reference pairs were not (part of the difference may then be technical), and when a
+  sample has fewer reads than 95% of the reference samples.
 - The reference pairs were taken at the intervals their studies chose. Over a longer
   interval, larger changes are expected.
 
