@@ -1,0 +1,42 @@
+{
+    "synthetic fixture: positions against the uncorrected and the corrected panel": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.percentile_stability.tsv:md5,a80ca8dbfe80ce29cc36f0b1ba3a7a21"
+                ]
+            ],
+            {
+                "versions_numpy": [
+                    [
+                        "PERCENTILE_STABILITY",
+                        "numpy",
+                        "1.26.4"
+                    ]
+                ],
+                "versions_pandas": [
+                    [
+                        "PERCENTILE_STABILITY",
+                        "pandas",
+                        "2.2.1"
+                    ]
+                ],
+                "versions_python": [
+                    [
+                        "PERCENTILE_STABILITY",
+                        "python",
+                        "3.12.3"
+                    ]
+                ]
+            }
+        ],
+        "timestamp": "2026-10-18T14:32:26.042182435",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.04.3"
+        }
+    }
+}

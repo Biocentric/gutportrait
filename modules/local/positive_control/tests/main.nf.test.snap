@@ -1,0 +1,35 @@
+{
+    "synthetic fixture: the planted effect survives correction": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.positive_control.tsv:md5,0926e3bb92dfc0f17e9cdc8ad55c707a"
+                ]
+            ],
+            {
+                "versions_mmuphin": [
+                    [
+                        "POSITIVE_CONTROL",
+                        "mmuphin",
+                        "1.16.0"
+                    ]
+                ],
+                "versions_r_base": [
+                    [
+                        "POSITIVE_CONTROL",
+                        "r-base",
+                        "4.3.2"
+                    ]
+                ]
+            }
+        ],
+        "timestamp": "2026-10-18T14:32:42.223465319",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.04.3"
+        }
+    }
+}

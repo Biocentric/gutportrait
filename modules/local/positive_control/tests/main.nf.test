@@ -1,0 +1,71 @@
+nextflow_process {
+
+    name "Test Process POSITIVE_CONTROL"
+    script "../main.nf"
+    process "POSITIVE_CONTROL"
+
+    tag "modules"
+    tag "modules_local"
+    tag "positive_control"
+
+    test("synthetic fixture: the planted effect survives correction") {
+
+        setup {
+            run("COLLAPSE_GENUS") {
+                script "../../collapse_genus/main.nf"
+                process {
+                    """
+                    input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true), file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_tax_species.silva.tsv", checkIfExists: true) ])
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = COLLAPSE_GENUS.out.counts
+                input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet.csv", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert snapshot(
+                process.out.result,
+                process.out.findAll { key, val -> key.toString().startsWith('versions') }
+            ).match()
+        }
+    }
+
+    test("gate failure stops the process: retaining more than the whole planted shift is impossible") {
+
+        config "./fail.config"
+
+        setup {
+            run("COLLAPSE_GENUS") {
+                script "../../collapse_genus/main.nf"
+                process {
+                    """
+                    input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true), file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_tax_species.silva.tsv", checkIfExists: true) ])
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = COLLAPSE_GENUS.out.counts
+                input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet.csv", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.failed
+            assert process.errorReport.contains("STOP: positive control FAIL")
+        }
+    }
+}

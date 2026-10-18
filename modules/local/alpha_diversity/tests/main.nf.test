@@ -1,0 +1,30 @@
+nextflow_process {
+
+    name "Test Process ALPHA_DIVERSITY"
+    script "../main.nf"
+    process "ALPHA_DIVERSITY"
+
+    tag "modules"
+    tag "modules_local"
+    tag "alpha_diversity"
+
+    test("synthetic fixture: the planted age effect raises Shannon with age band") {
+
+        when {
+            process {
+                """
+                input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true) ])
+                input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet.csv", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert snapshot(
+                process.out.alpha, process.out.position, process.out.params,
+                process.out.findAll { key, val -> key.toString().startsWith('versions') }
+            ).match()
+        }
+    }
+}

@@ -1,0 +1,41 @@
+nextflow_process {
+
+    name "Test Process TAXON_PERCENTILES"
+    script "../main.nf"
+    process "TAXON_PERCENTILES"
+
+    tag "modules"
+    tag "modules_local"
+    tag "taxon_percentiles"
+
+    test("synthetic fixture: the planted self_P3 bloom sits at the 100th percentile") {
+
+        setup {
+            run("COLLAPSE_GENUS") {
+                script "../../collapse_genus/main.nf"
+                process {
+                    """
+                    input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true), file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_tax_species.silva.tsv", checkIfExists: true) ])
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = COLLAPSE_GENUS.out.counts
+                input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet.csv", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert snapshot(
+                process.out.percentiles, process.out.params,
+                process.out.findAll { key, val -> key.toString().startsWith('versions') }
+            ).match()
+        }
+    }
+}

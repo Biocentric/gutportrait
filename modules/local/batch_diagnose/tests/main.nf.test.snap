@@ -1,0 +1,43 @@
+{
+    "synthetic fixture: the planted study C bias gives R2(study) above the banner threshold": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.permanova.tsv:md5,169b1f24f3eefaadd85f08a9d0d0754d"
+                ]
+            ],
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.batch_summary.tsv:md5,7f506d0aab5dfe3080d29b35f66d71ee"
+                ]
+            ],
+            {
+                "versions_r_base": [
+                    [
+                        "BATCH_DIAGNOSE",
+                        "r-base",
+                        "4.5.3"
+                    ]
+                ],
+                "versions_vegan": [
+                    [
+                        "BATCH_DIAGNOSE",
+                        "vegan",
+                        "2.7.5"
+                    ]
+                ]
+            }
+        ],
+        "timestamp": "2026-10-18T14:31:05.249817845",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.04.3"
+        }
+    }
+}

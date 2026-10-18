@@ -1,0 +1,42 @@
+nextflow_process {
+
+    name "Test Process DEVIATION_FLAGS"
+    script "../main.nf"
+    process "DEVIATION_FLAGS"
+
+    tag "modules"
+    tag "modules_local"
+    tag "deviation_flags"
+
+    test("synthetic fixture: only self_P3 raises flags") {
+
+        setup {
+            run("ALPHA_DIVERSITY") {
+                script "../../alpha_diversity/main.nf"
+                process {
+                    """
+                    input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true) ])
+                    input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet.csv", checkIfExists: true)
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true), file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_tax_species.silva.tsv", checkIfExists: true) ]).join(ALPHA_DIVERSITY.out.alpha)
+                input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet.csv", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert snapshot(
+                process.out.flags,
+                process.out.findAll { key, val -> key.toString().startsWith('versions') }
+            ).match()
+        }
+    }
+}

@@ -1,0 +1,29 @@
+nextflow_process {
+
+    name "Test Process COLLAPSE_GENUS"
+    script "../main.nf"
+    process "COLLAPSE_GENUS"
+
+    tag "modules"
+    tag "modules_local"
+    tag "collapse_genus"
+
+    test("synthetic fixture") {
+
+        when {
+            process {
+                """
+                input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true), file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_tax_species.silva.tsv", checkIfExists: true) ])
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert snapshot(
+                process.out.counts, process.out.stats,
+                process.out.findAll { key, val -> key.toString().startsWith('versions') }
+            ).match()
+        }
+    }
+}

@@ -1,0 +1,50 @@
+{
+    "synthetic fixture: the planted self_P3 bloom sits at the 100th percentile": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.taxon_percentiles.tsv:md5,3640c099a0cae2856e5f428da8eb35da"
+                ]
+            ],
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.percentile_params.tsv:md5,2dc2fb756866a94001fe5d3baab354c0"
+                ]
+            ],
+            {
+                "versions_numpy": [
+                    [
+                        "TAXON_PERCENTILES",
+                        "numpy",
+                        "1.26.4"
+                    ]
+                ],
+                "versions_pandas": [
+                    [
+                        "TAXON_PERCENTILES",
+                        "pandas",
+                        "2.2.1"
+                    ]
+                ],
+                "versions_python": [
+                    [
+                        "TAXON_PERCENTILES",
+                        "python",
+                        "3.12.3"
+                    ]
+                ]
+            }
+        ],
+        "timestamp": "2026-10-18T14:33:16.669679537",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.04.3"
+        }
+    }
+}

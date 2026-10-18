@@ -1,0 +1,58 @@
+{
+    "synthetic fixture: the planted age effect raises Shannon with age band": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.alpha_diversity.tsv:md5,95158f3e9ebca61dbdbe31eed4528ef3"
+                ]
+            ],
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.alpha_position.tsv:md5,d78579ae21a9d7430e7347c73ff24d9c"
+                ]
+            ],
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.alpha_params.tsv:md5,3df7941e7bebf4eb058b31ee05040181"
+                ]
+            ],
+            {
+                "versions_numpy": [
+                    [
+                        "ALPHA_DIVERSITY",
+                        "numpy",
+                        "1.26.4"
+                    ]
+                ],
+                "versions_pandas": [
+                    [
+                        "ALPHA_DIVERSITY",
+                        "pandas",
+                        "2.2.1"
+                    ]
+                ],
+                "versions_python": [
+                    [
+                        "ALPHA_DIVERSITY",
+                        "python",
+                        "3.12.3"
+                    ]
+                ]
+            }
+        ],
+        "timestamp": "2026-10-18T14:30:34.013448774",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.04.3"
+        }
+    }
+}

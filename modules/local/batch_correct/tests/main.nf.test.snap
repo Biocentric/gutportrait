@@ -1,0 +1,43 @@
+{
+    "synthetic fixture: panel harmonised, personal samples unchanged": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.genus_counts_corrected.tsv:md5,809567dbb041d4ae62e4481297fb5704"
+                ]
+            ],
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.correction_summary.tsv:md5,b0ab0cd70592d9952f8658f6a97b01e4"
+                ]
+            ],
+            {
+                "versions_mmuphin": [
+                    [
+                        "BATCH_CORRECT",
+                        "mmuphin",
+                        "1.16.0"
+                    ]
+                ],
+                "versions_r_base": [
+                    [
+                        "BATCH_CORRECT",
+                        "r-base",
+                        "4.3.2"
+                    ]
+                ]
+            }
+        ],
+        "timestamp": "2026-10-18T14:30:49.673295233",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.04.3"
+        }
+    }
+}

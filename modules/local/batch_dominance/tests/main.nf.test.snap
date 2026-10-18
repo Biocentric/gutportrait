@@ -1,0 +1,42 @@
+{
+    "synthetic fixture: banner up, age a finding, sex and BMI orientation only": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.gates.tsv:md5,9deb42efe944f69ad0ddd64abb8649e4"
+                ]
+            ],
+            {
+                "versions_numpy": [
+                    [
+                        "BATCH_DOMINANCE",
+                        "numpy",
+                        "1.26.4"
+                    ]
+                ],
+                "versions_pandas": [
+                    [
+                        "BATCH_DOMINANCE",
+                        "pandas",
+                        "2.2.1"
+                    ]
+                ],
+                "versions_python": [
+                    [
+                        "BATCH_DOMINANCE",
+                        "python",
+                        "3.12.3"
+                    ]
+                ]
+            }
+        ],
+        "timestamp": "2026-10-18T14:31:26.569618468",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.04.3"
+        }
+    }
+}

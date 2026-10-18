@@ -1,0 +1,42 @@
+{
+    "synthetic fixture: only self_P3 raises flags": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.deviation_flags.tsv:md5,15197b00c610c02d74761064815590f2"
+                ]
+            ],
+            {
+                "versions_numpy": [
+                    [
+                        "DEVIATION_FLAGS",
+                        "numpy",
+                        "1.26.4"
+                    ]
+                ],
+                "versions_pandas": [
+                    [
+                        "DEVIATION_FLAGS",
+                        "pandas",
+                        "2.2.1"
+                    ]
+                ],
+                "versions_python": [
+                    [
+                        "DEVIATION_FLAGS",
+                        "python",
+                        "3.12.3"
+                    ]
+                ]
+            }
+        ],
+        "timestamp": "2026-10-18T14:31:58.226360019",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.04.3"
+        }
+    }
+}
