@@ -37,6 +37,10 @@ full list for the version you ran.
 
   > Harris CR, Millman KJ, van der Walt SJ, et al. Array programming with NumPy. Nature. 2020 Sep;585(7825):357-362. doi: 10.1038/s41586-020-2649-2. PubMed PMID: 32939066; PubMed Central PMCID: PMC7759461.
 
+- [MMUPHin](https://pubmed.ncbi.nlm.nih.gov/36192803/)
+
+  > Ma S, Shungin D, Mallick H, Schirmer M, Nguyen LH, Kolde R, Franzosa E, Vlamakis H, Xavier R, Huttenhower C. Population structure discovery in meta-analyzed microbial communities and inflammatory bowel disease using MMUPHin. Genome Biol. 2022;23:208. doi: 10.1186/s13059-022-02753-4. PubMed PMID: 36192803; PubMed Central PMCID: PMC9531436.
+
 - [vegan](https://CRAN.R-project.org/package=vegan)
 
   > Oksanen J, Simpson GL, Blanchet FG, et al. vegan: Community Ecology Package. R package version 2.7-5. https://CRAN.R-project.org/package=vegan

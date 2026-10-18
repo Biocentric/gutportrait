@@ -1,0 +1,93 @@
+name: "batch_dominance"
+description: "Batch-dominance gate - which contrasts and which personal deviations may be read as biology"
+keywords:
+  - microbiome
+  - batch effect
+  - gate
+  - permanova
+tools:
+  - "pandas":
+      description: "Powerful data structures for data analysis in Python"
+      homepage: "https://pandas.pydata.org"
+      documentation: "https://pandas.pydata.org/docs/"
+      licence: ["BSD-3-Clause"]
+      identifier: ""
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map with run information, e.g. `[ id:'native' ]`
+    - permanova:
+        type: file
+        description: PERMANOVA table from BATCH_DIAGNOSE
+        pattern: "*.permanova.tsv"
+    - batch_summary:
+        type: file
+        description: Batch summary from BATCH_DIAGNOSE
+        pattern: "*.batch_summary.tsv"
+    - genus_counts:
+        type: file
+        description: Uncorrected genus counts from COLLAPSE_GENUS
+        pattern: "*.genus_counts.tsv"
+  - samplesheet:
+      type: file
+      description: The validated pipeline samplesheet
+      pattern: "*.csv"
+
+output:
+  gates:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.gates.tsv":
+          type: file
+          description: One row per gate - study banner, each contrast (finding or orientation only) and personal positioning against the between-study spread - with value, threshold and detail
+          pattern: "*.gates.tsv"
+  versions_python:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "python":
+          type: string
+          description: The name of the tool
+      - 'python3 --version | sed "s/Python //"':
+          type: eval
+          description: The expression to obtain the version of the tool
+  versions_pandas:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "pandas":
+          type: string
+          description: The name of the tool
+      - 'python3 -c "import pandas; print(pandas.__version__)"':
+          type: eval
+          description: The expression to obtain the version of the tool
+  versions_numpy:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "numpy":
+          type: string
+          description: The name of the tool
+      - 'python3 -c "import numpy; print(numpy.__version__)"':
+          type: eval
+          description: The expression to obtain the version of the tool
+
+topics:
+  versions:
+    - - process:
+          type: string
+          description: The process the versions were collected from
+      - tool:
+          type: string
+          description: The tool name the version was collected for
+      - version:
+          type: string
+          description: The version of the tool
+
+authors:
+  - "@Biocentric"
+maintainers:
+  - "@Biocentric"

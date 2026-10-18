@@ -8,6 +8,11 @@ include { TAXON_PERCENTILES      } from '../modules/local/taxon_percentiles/main
 include { ALPHA_DIVERSITY        } from '../modules/local/alpha_diversity/main'
 include { BATCH_DIAGNOSE         } from '../modules/local/batch_diagnose/main'
 include { DEVIATION_FLAGS        } from '../modules/local/deviation_flags/main'
+include { BATCH_CORRECT          } from '../modules/local/batch_correct/main'
+include { POSITIVE_CONTROL       } from '../modules/local/positive_control/main'
+include { BATCH_DOMINANCE        } from '../modules/local/batch_dominance/main'
+include { PERCENTILE_STABILITY   } from '../modules/local/percentile_stability/main'
+include { TAXON_PERCENTILES as TAXON_PERCENTILES_CORRECTED } from '../modules/local/taxon_percentiles/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
@@ -66,6 +71,38 @@ workflow GUTPORTRAIT {
     //
     BATCH_DIAGNOSE (
         COLLAPSE_GENUS.out.counts,
+        ch_samplesheet
+    )
+
+    //
+    // STAGE 3 - INTEGRATE, correction: harmonise the PANEL studies only (personal samples are
+    // never corrected), check with a planted signal that correction preserves real effects
+    // (the run stops if it does not), and recompute every percentile on the corrected panel.
+    //
+    BATCH_CORRECT (
+        COLLAPSE_GENUS.out.counts,
+        ch_samplesheet
+    )
+    POSITIVE_CONTROL (
+        COLLAPSE_GENUS.out.counts,
+        ch_samplesheet
+    )
+    TAXON_PERCENTILES_CORRECTED (
+        BATCH_CORRECT.out.counts,
+        ch_samplesheet
+    )
+    PERCENTILE_STABILITY (
+        TAXON_PERCENTILES.out.percentiles.join(TAXON_PERCENTILES_CORRECTED.out.percentiles)
+    )
+
+    //
+    // GATES - batch dominance: which contrasts and which personal deviations may be read as
+    // biology at all, given how much variation is between studies
+    //
+    BATCH_DOMINANCE (
+        BATCH_DIAGNOSE.out.permanova
+            .join(BATCH_DIAGNOSE.out.summary)
+            .join(COLLAPSE_GENUS.out.counts),
         ch_samplesheet
     )
 

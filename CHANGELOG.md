@@ -36,6 +36,15 @@ Initial release of Biocentric/gutportrait, created with the [nf-core](https://nf
   genera, beta outlier), each reported raised or not, with value and threshold. All
   thresholds are parameters.
 - Optional samplesheet column `context`, carried into every personal-sample table.
+- `BATCH_CORRECT`: MMUPHin `adjust_batch` harmonises the panel studies, optionally
+  protecting complete covariates (`--correction_covariates`). Personal samples are never
+  corrected.
+- `POSITIVE_CONTROL`: injected-signal control (D12a). A planted fold change must survive the
+  same correction (paired Wilcoxon, `--pc_alpha`, `--pc_retain`), or the run stops.
+- `BATCH_DOMINANCE`: the study banner, a finding / orientation-only verdict per contrast, and
+  personal positioning against the between-study spread (D12).
+- `PERCENTILE_STABILITY` and `TAXON_PERCENTILES_CORRECTED`: every genus position against
+  the uncorrected and the corrected panel; positions that change category are unstable.
 
 ### `Fixed`
 
@@ -44,5 +53,6 @@ Initial release of Biocentric/gutportrait, created with the [nf-core](https://nf
 ### `Dependencies`
 
 - `r-vegan` 2.7.5 (R 4.5.3) for `BATCH_DIAGNOSE`.
+- `bioconductor-mmuphin` 1.16.0 (R 4.3.2) for `BATCH_CORRECT` and `POSITIVE_CONTROL`.
 
 ### `Deprecated`

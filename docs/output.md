@@ -8,10 +8,9 @@ top-level results directory (`--outdir`). File names start with the comparison a
 directory.
 
 > [!IMPORTANT]
-> Batch correction and the two gates are not built yet. The batch diagnosis below measures
-> how much of the panel's variation is study, but nothing is corrected for it. Until the
-> gates exist, every number is computed against the **whole, uncorrected** panel. Read it
-> as a position, not a finding.
+> Read [the gates](#gates) first. They say which numbers may be read as biology at all. A
+> position that is not stable under batch correction, or that sits within the spread
+> between reference studies, is a position, not a finding.
 
 ## Pipeline overview
 
@@ -20,6 +19,9 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 - [Genus tables](#genus-tables) - ASV counts collapsed to genus, with unassigned reads accounted for
 - [Taxon percentiles](#taxon-percentiles) - where each personal sample sits in the panel, per genus, in CLR space
 - [Batch diagnosis](#batch-diagnosis) - how much of the panel's variation is study, and how much each metadata variable
+- [Batch correction](#batch-correction) - the panel's studies harmonised with MMUPHin; personal samples never corrected
+- [Gates](#gates) - the injected-signal positive control and the batch-dominance rules
+- [Percentile stability](#percentile-stability) - which genus positions survive batch correction
 - [Alpha diversity](#alpha-diversity) - diversity at one fixed depth, and where each personal sample sits
 - [Deviation flags](#deviation-flags) - extremes-only checks for each personal sample
 - [MultiQC](#multiqc) - software versions, parameters and the methods text
@@ -93,6 +95,24 @@ How to read it:
   low percentile is not a deviation. The [deviation flags](#deviation-flags) apply stricter,
   pre-registered criteria.
 
+### Percentile stability
+
+<details markdown="1">
+<summary>Output files</summary>
+
+- `percentiles/`
+  - `<arm>.corrected.taxon_percentiles.tsv`: the same percentiles against the
+    batch-corrected panel.
+  - `<arm>.percentile_stability.tsv`: per genus and personal sample, both percentiles,
+    their categories (`low` ≤ `--stability_low_percentile`, `high` ≥
+    `--stability_high_percentile`, `middle`), whether they agree (`stable`) and the shift.
+
+</details>
+
+A position is stable when its category is the same against the uncorrected and the
+corrected panel. An extreme that appears in only one of the two was created, or hidden, by
+differences between studies, and is not a finding.
+
 ### Batch diagnosis
 
 <details markdown="1">
@@ -119,6 +139,58 @@ as the percentiles. Models:
   `note` says `confounded`.
 
 With a single panel study, R2(study) cannot be estimated and is reported as missing.
+
+### Batch correction
+
+<details markdown="1">
+<summary>Output files</summary>
+
+- `batch/`
+  - `<arm>.genus_counts_corrected.tsv`: the genus table with the **panel** studies
+    harmonised by MMUPHin (`adjust_batch`, batch = study) and the personal samples
+    unchanged. Same layout as `genus/<arm>.genus_counts.tsv`.
+  - `<arm>.correction_summary.tsv`: method, studies, samples, the covariates protected
+    (`--correction_covariates`, only those filled for every panel sample) and a note.
+
+</details>
+
+The personal samples form their own batch, and three samples cannot separate their lab
+from their biology. Correcting that batch would pull them toward the panel and erase the
+deviation the pipeline measures, so they are never corrected. With a single panel study
+there is nothing to harmonise, and the table is passed through with a note.
+
+### Gates
+
+<details markdown="1">
+<summary>Output files</summary>
+
+- `gates/`
+  - `<arm>.positive_control.tsv`: verdict (`PASS`, `FAIL` or `NOT_APPLICABLE`), the planted
+    genus, `n_spiked`, the expected CLR shift, the median surviving shift, the `retained`
+    share and the paired Wilcoxon `p`.
+  - `<arm>.gates.tsv`: one row per gate, with `status`, `value`, `threshold` and `detail`.
+
+</details>
+
+**Positive control, injected signal.** A common, mid-abundance genus is multiplied by
+`--pc_fold` in a random half of every panel study, and the same correction is applied to
+the spiked and the unspiked table. For each spiked sample, the shift that survives is its
+CLR in the spiked, corrected table minus its CLR in the unspiked, corrected one. The control
+passes when the median surviving shift has the planted sign, a paired Wilcoxon test gives
+p < `--pc_alpha`, and at least `--pc_retain` of the planted shift survives. **If it fails,
+the run stops**: a correction that erases an effect planted on purpose would erase real ones.
+
+**Batch dominance** (`gates.tsv`):
+
+| Gate                         | Meaning                                                                                                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `study_banner`               | `BANNER` when R²(study) exceeds `--banner_r2_study`: every population-facing claim is orientation only                                                              |
+| `contrast:<variable>`        | `finding` only if the variable's R² exceeds R²(study) in the same model and p < `--dominance_alpha`; otherwise `orientation_only` or `not_testable`                 |
+| `personal_positioning`       | `interpretable` only if the personal samples' centroid lies further from the pooled panel than the furthest study centroid; otherwise `within_between_study_spread` |
+| `personal_distance:<sample>` | each personal sample's Aitchison distance to the pooled panel centroid, for reference                                                                               |
+
+`personal_positioning` needs at least two panel studies with `--min_study_n` samples each;
+with fewer, between-study spread cannot be measured and the gate is `not_assessable`.
 
 ### Alpha diversity
 

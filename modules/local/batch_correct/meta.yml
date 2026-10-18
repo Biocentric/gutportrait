@@ -1,0 +1,83 @@
+name: "batch_correct"
+description: "Harmonise the reference panel studies with MMUPHin; personal samples are never corrected"
+keywords:
+  - microbiome
+  - batch correction
+  - mmuphin
+  - meta-analysis
+tools:
+  - "mmuphin":
+      description: "Meta-analysis methods with uniform pipeline for heterogeneity in microbiome studies, including batch correction of microbial abundance data"
+      homepage: "https://huttenhower.sph.harvard.edu/mmuphin"
+      documentation: "https://bioconductor.org/packages/MMUPHin"
+      licence: ["MIT"]
+      identifier: ""
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map with run information, e.g. `[ id:'native' ]`
+    - genus_counts:
+        type: file
+        description: Genus-by-sample counts for all samples, from COLLAPSE_GENUS
+        pattern: "*.genus_counts.tsv"
+  - samplesheet:
+      type: file
+      description: The validated pipeline samplesheet
+      pattern: "*.csv"
+
+output:
+  counts:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.genus_counts_corrected.tsv":
+          type: file
+          description: Genus counts with the panel studies harmonised by MMUPHin and the personal samples unchanged, same layout as the input
+          pattern: "*.genus_counts_corrected.tsv"
+  summary:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.correction_summary.tsv":
+          type: file
+          description: Method, number of studies and samples, covariates used and a note on what was or was not corrected
+          pattern: "*.correction_summary.tsv"
+  versions_r_base:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "r-base":
+          type: string
+          description: The name of the tool
+      - 'Rscript -e "cat(paste(R.version[c(''major'', ''minor'')], collapse = ''.''))"':
+          type: eval
+          description: The expression to obtain the version of the tool
+  versions_mmuphin:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "mmuphin":
+          type: string
+          description: The name of the tool
+      - 'Rscript -e "cat(as.character(packageVersion(''MMUPHin'')))"':
+          type: eval
+          description: The expression to obtain the version of the tool
+
+topics:
+  versions:
+    - - process:
+          type: string
+          description: The process the versions were collected from
+      - tool:
+          type: string
+          description: The tool name the version was collected for
+      - version:
+          type: string
+          description: The version of the tool
+
+authors:
+  - "@Biocentric"
+maintainers:
+  - "@Biocentric"

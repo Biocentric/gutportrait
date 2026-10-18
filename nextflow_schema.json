@@ -186,6 +186,74 @@
                 }
             }
         },
+        "gate_options": {
+            "title": "Batch correction and gate options",
+            "type": "object",
+            "fa_icon": "fas fa-shield-alt",
+            "description": "Batch correction of the panel and the two gates of DECISIONS.md D12. Strict by default.",
+            "properties": {
+                "correction_covariates": {
+                    "type": "string",
+                    "description": "Comma-separated samplesheet columns to protect during batch correction, e.g. \"age_cat,sex\". Columns not filled for every panel sample are dropped and listed.",
+                    "fa_icon": "fas fa-lock"
+                },
+                "pc_fold": {
+                    "type": "number",
+                    "default": 2,
+                    "exclusiveMinimum": 1,
+                    "description": "Positive control: fold change planted in half of each panel study.",
+                    "fa_icon": "fas fa-syringe"
+                },
+                "pc_alpha": {
+                    "type": "number",
+                    "default": 0.01,
+                    "exclusiveMinimum": 0,
+                    "maximum": 1,
+                    "description": "Positive control: the planted effect must survive correction at this significance (paired Wilcoxon).",
+                    "fa_icon": "fas fa-check"
+                },
+                "pc_retain": {
+                    "type": "number",
+                    "default": 0.5,
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Positive control: share of the planted CLR shift that must survive correction. Below it, the run stops.",
+                    "fa_icon": "fas fa-percentage"
+                },
+                "pc_min_prevalence": {
+                    "type": "number",
+                    "default": 0.9,
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Positive control: the planted genus is chosen among genera present in at least this fraction of the panel.",
+                    "fa_icon": "fas fa-filter"
+                },
+                "dominance_alpha": {
+                    "type": "number",
+                    "default": 0.05,
+                    "exclusiveMinimum": 0,
+                    "maximum": 1,
+                    "description": "Batch dominance: a contrast counts as a finding only if its R2 exceeds R2(study) and p is below this.",
+                    "fa_icon": "fas fa-balance-scale"
+                },
+                "stability_low_percentile": {
+                    "type": "number",
+                    "default": 10,
+                    "minimum": 0,
+                    "maximum": 50,
+                    "description": "Stability: genus positions at or below this percentile count as low.",
+                    "fa_icon": "fas fa-arrow-down"
+                },
+                "stability_high_percentile": {
+                    "type": "number",
+                    "default": 90,
+                    "minimum": 50,
+                    "maximum": 100,
+                    "description": "Stability: genus positions at or above this percentile count as high.",
+                    "fa_icon": "fas fa-arrow-up"
+                }
+            }
+        },
         "institutional_config_options": {
             "title": "Institutional config options",
             "type": "object",
@@ -346,6 +414,9 @@
         },
         {
             "$ref": "#/$defs/deviation_options"
+        },
+        {
+            "$ref": "#/$defs/gate_options"
         },
         {
             "$ref": "#/$defs/institutional_config_options"

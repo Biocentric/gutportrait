@@ -116,8 +116,22 @@ Deviation flags (DECISIONS.md D12):
 | `--core_prevalence`      | `0.95`  | Genera present in at least this fraction of the panel count as core.                                              |
 | `--core_min_expected`    | `10`    | A missing core genus is flagged only if the panel median predicts at least this many reads at the sample's depth. |
 
+Batch correction and gates (DECISIONS.md D12):
+
+| Parameter                     | Default | Meaning                                                                                                     |
+| ----------------------------- | ------- | ----------------------------------------------------------------------------------------------------------- |
+| `--correction_covariates`     | none    | Samplesheet columns to protect during batch correction, e.g. `age_cat,sex`. Incomplete columns are dropped. |
+| `--pc_fold`                   | `2`     | Positive control: fold change planted in half of each panel study.                                          |
+| `--pc_alpha`                  | `0.01`  | Positive control: the planted effect must survive correction at this significance.                          |
+| `--pc_retain`                 | `0.5`   | Positive control: share of the planted shift that must survive; below it the run stops.                     |
+| `--pc_min_prevalence`         | `0.9`   | Positive control: the planted genus is chosen among genera present in at least this share of the panel.     |
+| `--dominance_alpha`           | `0.05`  | A contrast is a finding only if its R² exceeds R²(study) and p is below this.                               |
+| `--stability_low_percentile`  | `10`    | Genus positions at or below this percentile count as low.                                                   |
+| `--stability_high_percentile` | `90`    | Genus positions at or above this percentile count as high.                                                  |
+
 The defaults are deliberately strict. The values used are written next to the results, in
-the `*_params.tsv` and `*.batch_summary.tsv` files.
+the `*_params.tsv`, `*.batch_summary.tsv`, `*.correction_summary.tsv` and
+`*.positive_control.tsv` files.
 
 ## Test profile
 
@@ -130,13 +144,14 @@ nextflow run Biocentric/gutportrait -profile test,docker --outdir results_test
 personal samples, laid out exactly like an ampliseq 2.18.0 results directory. Known
 signals are planted in it, so that every stage has an answer to recover:
 
-| Planted signal                                                                          | Recovered by                                                                                                                                                                  |
-| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Personal sample `self_P3` carries an _Escherichia-Shigella_ bloom (about 31% of reads)  | `TAXON_PERCENTILES` (100th percentile) and `DEVIATION_FLAGS` (Enterobacteriaceae and Proteobacteria blooms, beta outlier, all raised; nothing raised for `self_P1`/`self_P2`) |
-| Older age bands have a more even composition, so Shannon diversity rises with `age_cat` | `ALPHA_DIVERSITY` (mean Shannon 3.68 in the 20s rising to 4.04 in the 60s) and `BATCH_DIAGNOSE` (age R² 0.37, p = 0.001); the real-effect positive control is planned         |
-| Study C carries _Bacteroides_ ×3, _Bifidobacterium_ ×2 and _Segatella_ ×0.3             | `BATCH_DIAGNOSE`: R²(study) 0.34, p = 0.001, so the orientation-only banner is raised; between the unbiased studies A and B, R² 0.02                                          |
-| Study C has no per-sample metadata, like the ENA panels                                 | `BATCH_DIAGNOSE` tests the metadata variables on studies A and B only; cohort matching (planned) must fall back to "unmatched" for C                                          |
-| Personal samples carry a `context` label                                                | every personal-sample table carries it through                                                                                                                                |
+| Planted signal                                                                          | Recovered by                                                                                                                                                                                                                                          |
+| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Personal sample `self_P3` carries an _Escherichia-Shigella_ bloom (about 31% of reads)  | `TAXON_PERCENTILES` (100th percentile) and `DEVIATION_FLAGS` (Enterobacteriaceae and Proteobacteria blooms, beta outlier, all raised; nothing raised for `self_P1`/`self_P2`)                                                                         |
+| Older age bands have a more even composition, so Shannon diversity rises with `age_cat` | `ALPHA_DIVERSITY` (mean Shannon 3.68 in the 20s rising to 4.04 in the 60s) and `BATCH_DIAGNOSE` (age R² 0.37, p = 0.001); the real-effect positive control is planned                                                                                 |
+| Study C carries _Bacteroides_ ×3, _Bifidobacterium_ ×2 and _Segatella_ ×0.3             | `BATCH_DIAGNOSE`: R²(study) 0.34, p = 0.001, so the orientation-only banner is raised; between the unbiased studies A and B, R² 0.02. `BATCH_CORRECT` removes it (study medians of _Bacteroides_ 0.14 / 0.12 / 0.30 before, 0.17 / 0.15 / 0.16 after) |
+| A genus doubled on purpose in half of every study (made by `POSITIVE_CONTROL` itself)   | `POSITIVE_CONTROL`: 94% of the planted shift survives correction, p = 7.6 × 10⁻⁶, so the gate passes                                                                                                                                                  |
+| Study C has no per-sample metadata, like the ENA panels                                 | `BATCH_DIAGNOSE` tests the metadata variables on studies A and B only; cohort matching (planned) must fall back to "unmatched" for C                                                                                                                  |
+| Personal samples carry a `context` label                                                | every personal-sample table carries it through                                                                                                                                                                                                        |
 
 The fixture is invented, including the personal samples and their metadata.
 `python tests/fixtures/make_synthetic_fixture.py` regenerates it byte-identically.
