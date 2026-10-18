@@ -8,7 +8,7 @@ nextflow_process {
     tag "modules_local"
     tag "deviation_flags"
 
-    test("synthetic fixture: only self_P3 raises flags") {
+    test("synthetic fixture: only self_P3 raises flags, each with its reference fire rate") {
 
         setup {
             run("ALPHA_DIVERSITY") {
@@ -33,8 +33,14 @@ nextflow_process {
 
         then {
             assert process.success
+            def flags = path(process.out.flags.get(0).get(1)).readLines()
+            assert flags.first().split('\t').contains('reference_fire_rate')
+            assert flags.findAll { line -> line.split('\t')[3] == 'yes' }.every { line -> line.startsWith('self_P3\t') }
+            assert flags.any { line -> line.startsWith('self_P3\t') && line.contains('\texcess_extremes\tyes\t') }
+            assert path(process.out.calibration.get(0).get(1)).readLines().size() == 9
             assert snapshot(
                 process.out.flags,
+                process.out.calibration,
                 process.out.findAll { key, val -> key.toString().startsWith('versions') }
             ).match()
         }

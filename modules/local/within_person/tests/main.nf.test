@@ -1,0 +1,143 @@
+nextflow_process {
+
+    name "Test Process WITHIN_PERSON"
+    script "../main.nf"
+    process "WITHIN_PERSON"
+
+    tag "modules"
+    tag "modules_local"
+    tag "within_person"
+
+    test("synthetic fixture: one person, and the planted bloom stands out from the noise floor") {
+
+        setup {
+            run("COLLAPSE_GENUS") {
+                script "../../collapse_genus/main.nf"
+                process {
+                    """
+                    input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true), file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_tax_species.silva.tsv", checkIfExists: true) ])
+                    """
+                }
+            }
+            run("ALPHA_DIVERSITY") {
+                script "../../alpha_diversity/main.nf"
+                process {
+                    """
+                    input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true) ])
+                    input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet.csv", checkIfExists: true)
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = COLLAPSE_GENUS.out.counts.join(ALPHA_DIVERSITY.out.alpha)
+                input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet.csv", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def identity = path(process.out.identity.get(0).get(1)).readLines()
+            assert identity.last().startsWith('all\t') && identity.last().contains('\tone_person\t')
+            def genus = path(process.out.genus_changes.get(0).get(1)).readLines()
+            assert genus.any { line -> line.startsWith('self_P1\tself_P3\tEscherichia-Shigella\tyes\tup\t') }
+            assert genus.any { line -> line.startsWith('self_P2\tself_P3\tEscherichia-Shigella\tyes\tup\t') }
+            assert !genus.any { line -> line.startsWith('self_P1\tself_P2\tEscherichia-Shigella\tyes\t') }
+            assert snapshot(
+                process.out.reference,
+                process.out.summary,
+                process.out.changes,
+                process.out.genus_changes,
+                process.out.identity,
+                process.out.findAll { key, val -> key.toString().startsWith('versions') }
+            ).match()
+        }
+    }
+
+    test("no repeat samples: no within-person reference, identity from the between-person half") {
+
+        setup {
+            run("COLLAPSE_GENUS") {
+                script "../../collapse_genus/main.nf"
+                process {
+                    """
+                    input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true), file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_tax_species.silva.tsv", checkIfExists: true) ])
+                    """
+                }
+            }
+            run("ALPHA_DIVERSITY") {
+                script "../../alpha_diversity/main.nf"
+                process {
+                    """
+                    input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true) ])
+                    input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet_norepeats.csv", checkIfExists: true)
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = COLLAPSE_GENUS.out.counts.join(ALPHA_DIVERSITY.out.alpha)
+                input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet_norepeats.csv", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert path(process.out.changes.get(0).get(1)).text.contains('no within-person reference')
+            assert path(process.out.identity.get(0).get(1)).readLines().last().contains('\tone_person\t')
+            assert snapshot(
+                process.out.changes,
+                process.out.identity
+            ).match()
+        }
+    }
+
+    test("a sample mix-up: the identity check points at the sample from someone else") {
+
+        setup {
+            run("COLLAPSE_GENUS") {
+                script "../../collapse_genus/main.nf"
+                process {
+                    """
+                    input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true), file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_tax_species.silva.tsv", checkIfExists: true) ])
+                    """
+                }
+            }
+            run("ALPHA_DIVERSITY") {
+                script "../../alpha_diversity/main.nf"
+                process {
+                    """
+                    input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true) ])
+                    input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet_mixup.csv", checkIfExists: true)
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = COLLAPSE_GENUS.out.counts.join(ALPHA_DIVERSITY.out.alpha)
+                input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet_mixup.csv", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def overall = path(process.out.identity.get(0).get(1)).readLines().last()
+            assert overall.contains('\tone_sample_differs\t') && overall.contains('studya_07')
+            assert snapshot(
+                process.out.identity
+            ).match()
+        }
+    }
+}

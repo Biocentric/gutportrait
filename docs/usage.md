@@ -25,16 +25,18 @@ A comma-separated file with a header row and one row per sample of the ampliseq 
 should take part in the comparison:
 
 ```csv title="samplesheet.csv"
-sample,role,study,run,age_cat,sex,bmi_cat,country
-self_sample1,personal,self,RUN_A,40s,female,Normal,Netherlands
-panel_ERR0000001,panel,PRJEB00000,RUN_C,,,,
-cohort_S0001,panel,COHORT_X,RUN_D,30s,male,Overweight,Germany
+sample,role,study,run,age_cat,sex,bmi_cat,country,context,subject
+self_sample1,personal,self,RUN_A,40s,female,Normal,Netherlands,baseline,
+self_sample2,personal,self,RUN_B,40s,female,Normal,Netherlands,after a diet change,
+panel_ERR0000001,panel,PRJEB00000,RUN_C,,,,,,
+panel_ERR0000002,repeat,PRJEB00000,RUN_C,,,,,,panel_ERR0000001
+cohort_S0001,panel,COHORT_X,RUN_D,30s,male,Overweight,Germany,,
 ```
 
 | Column    | Required | Description                                                                                                                                                                                                                   |
 | --------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `sample`  | yes      | Sample name exactly as it appears as a column of ampliseq's `dada2/ASV_table.tsv`. Must match `^[a-zA-Z][a-zA-Z0-9_]+$`, the same rule ampliseq applies.                                                                      |
-| `role`    | yes      | `personal` for your samples, `panel` for reference samples.                                                                                                                                                                   |
+| `role`    | yes      | `personal` for your samples, `panel` for reference samples, `repeat` for a second sample of a panel person (see [repeat samples](#repeat-samples)).                                                                           |
 | `study`   | yes      | The batch unit, usually the ENA project. Batch diagnosis and correction work per study. Personal samples need a study of their own: a study that contains both roles is rejected, so your samples can never pass for a batch. |
 | `run`     | yes      | The sequencing run (flowcell), the same value as the `run` column of the ampliseq samplesheet. It is the unit DADA2 learned its error model on.                                                                               |
 | `age_cat` | no       | `20s`, `30s`, `40s`, `50s`, `60s` or `70+`.                                                                                                                                                                                   |
@@ -42,6 +44,7 @@ cohort_S0001,panel,COHORT_X,RUN_D,30s,male,Overweight,Germany
 | `bmi_cat` | no       | `Underweight`, `Normal`, `Overweight` or `Obese`.                                                                                                                                                                             |
 | `country` | no       | Free text.                                                                                                                                                                                                                    |
 | `context` | no       | Free text, for personal samples: when or why the sample was taken, e.g. `baseline` or `after a diet change`. It is carried into the percentile, alpha and flag tables, so every number can be read next to it.                |
+| `subject` | no       | For `repeat` rows, required: the panel person the sample belongs to, given as that panel row's `subject`, or its `sample` name when `subject` is empty. Your own samples are always taken to be one person.                   |
 
 Leave optional cells empty where a value is unknown. For public ENA panels that is the
 normal case: they publish study-level inclusion criteria, not per-sample metadata. The
@@ -52,13 +55,33 @@ The run stops before any work starts when:
 
 - a sample name appears twice, or does not match the pattern above;
 - there is no personal sample, or there are fewer panel samples than `--min_panel_samples`;
-- a study contains both personal and panel samples.
+- a study contains both personal and panel samples;
+- a `repeat` row's `subject` names no panel person of the same study.
 
 It stops at the first module when a samplesheet sample has no column in the ASV table.
 Samples that are in the ASV table but not in the samplesheet are ignored, with a note in
 the task log; that is how you analyse a subset of one large ampliseq run.
 
 An [example samplesheet](../assets/samplesheet.csv) is provided with the pipeline.
+
+### Repeat samples
+
+Some panel studies sampled the same people twice, for example before and after an
+intervention. Their second samples go in as `repeat` rows, with `subject` naming the
+person. They never enter the reference distributions (percentiles, batch statistics,
+flags); they serve one purpose: measuring how much two samples of one person ordinarily
+differ. That is the noise floor against which the differences between your own samples
+are read, and the reference for the identity check (see
+[within-person change and identity](output.md#within-person-change-and-identity)).
+
+- At least `--min_reference_pairs` pairs (default 10) are needed. Without them, the change
+  statistics between your samples are not assessable, and the identity check uses only its
+  comparison with pairs of different people.
+- Use a person's own second sample, from the same study and sequencing run where the study
+  allows it, so that the pair differs the way two of your samples differ.
+- The interval matters: two samples taken days apart differ less than two taken months
+  apart. Prefer studies whose interval resembles yours, and read the result with the
+  interval in mind.
 
 ## The ampliseq results directory
 
@@ -118,16 +141,26 @@ Deviation flags (DECISIONS.md D12):
 
 Batch correction and gates (DECISIONS.md D12):
 
-| Parameter                     | Default | Meaning                                                                                                     |
-| ----------------------------- | ------- | ----------------------------------------------------------------------------------------------------------- |
-| `--correction_covariates`     | none    | Samplesheet columns to protect during batch correction, e.g. `age_cat,sex`. Incomplete columns are dropped. |
-| `--pc_fold`                   | `2`     | Positive control: fold change planted in half of each panel study.                                          |
-| `--pc_alpha`                  | `0.01`  | Positive control: the planted effect must survive correction at this significance.                          |
-| `--pc_retain`                 | `0.5`   | Positive control: share of the planted shift that must survive; below it the run stops.                     |
-| `--pc_min_prevalence`         | `0.9`   | Positive control: the planted genus is chosen among genera present in at least this share of the panel.     |
-| `--dominance_alpha`           | `0.05`  | A contrast is a finding only if its R² exceeds R²(study) and p is below this.                               |
-| `--stability_low_percentile`  | `10`    | Genus positions at or below this percentile count as low.                                                   |
-| `--stability_high_percentile` | `90`    | Genus positions at or above this percentile count as high.                                                  |
+| Parameter                     | Default | Meaning                                                                                                        |
+| ----------------------------- | ------- | -------------------------------------------------------------------------------------------------------------- |
+| `--correction_covariates`     | none    | Samplesheet columns to protect during batch correction, e.g. `age_cat,sex`. Incomplete columns are dropped.    |
+| `--pc_fold`                   | `2`     | Positive control: fold change planted in half of each panel study.                                             |
+| `--pc_alpha`                  | `0.01`  | Positive control: the planted effect must survive correction at this significance.                             |
+| `--pc_retain`                 | `0.5`   | Positive control: share of the planted shift that must survive; below it the run stops.                        |
+| `--pc_min_prevalence`         | `0.9`   | Positive control: the planted genus is chosen among genera present in at least this share of the panel.        |
+| `--dominance_alpha`           | `0.05`  | A contrast is a finding only if its R² exceeds R²(study) and p is below this.                                  |
+| `--stability_low_percentile`  | `10`    | Genus positions at or below this percentile count as low.                                                      |
+| `--stability_high_percentile` | `90`    | Genus positions at or above this percentile count as high.                                                     |
+| `--qc_max_z`                  | `3.5`   | Technical comparability: a metric is atypical beyond this modified z-score, against the panel and every study. |
+
+Within-person change and identity:
+
+| Parameter                       | Default | Meaning                                                                                                                |
+| ------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `--change_z`                    | `2`     | A genus changed between two of your samples when its change exceeds this many times its ordinary within-person change. |
+| `--min_reference_pairs`         | `10`    | Fewer `repeat` pairs than this: no within-person reference is used.                                                    |
+| `--identity_within_percentile`  | `95`    | Identity: a distance at or below this percentile of the within-person pairs is ordinary for one person.                |
+| `--identity_between_percentile` | `5`     | Identity: a distance below this percentile of the pairs of different people is ordinary for one person.                |
 
 The defaults are deliberately strict. The values used are written next to the results, in
 the `*_params.tsv`, `*.batch_summary.tsv`, `*.correction_summary.tsv` and
@@ -140,13 +173,19 @@ nextflow run Biocentric/gutportrait -profile test,docker --outdir results_test
 ```
 
 `-profile test` needs no input of your own. It runs on a synthetic dataset in
-`tests/fixtures/synthetic/`: 64 ASVs over 36 panel samples in three studies, plus three
-personal samples, laid out exactly like an ampliseq 2.18.0 results directory. Known
-signals are planted in it, so that every stage has an answer to recover:
+`tests/fixtures/synthetic/`: 64 ASVs over 36 panel samples in three studies, 16 repeat
+samples of panel people, and three personal samples of one invented person, laid out
+exactly like an ampliseq 2.18.0 results directory, read tracking included. Known signals
+are planted in it, so that every stage has an answer to recover:
 
 | Planted signal                                                                          | Recovered by                                                                                                                                                                                                                                          |
 | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Personal sample `self_P3` carries an _Escherichia-Shigella_ bloom (about 31% of reads)  | `TAXON_PERCENTILES` (100th percentile) and `DEVIATION_FLAGS` (Enterobacteriaceae and Proteobacteria blooms, beta outlier, all raised; nothing raised for `self_P1`/`self_P2`)                                                                         |
+| Personal sample `self_P3` carries an _Escherichia-Shigella_ bloom (about 31% of reads)  | `TAXON_PERCENTILES` (100th percentile) and `DEVIATION_FLAGS` (Enterobacteriaceae and Proteobacteria blooms, beta outlier and an excess of extreme genera, all raised; nothing raised for `self_P1`/`self_P2`)                                         |
+| The three personal samples are one person, sampled three times                          | `WITHIN_PERSON`: identity `one_person`; the two pairs with `self_P3` are `same_person_large_change`, because the difference sits in one genus                                                                                                         |
+| The bloom is a change within that person                                                | `WITHIN_PERSON`: _Escherichia-Shigella_ changes by z = 17 between `self_P1` and `self_P3`; 5 genera changed against 1 expected by chance, and 1 between `self_P1` and `self_P2`                                                                       |
+| Personal sample `self_P1` lost half its reads at quality filtering                      | `TECHNICAL_QC`: filter and end-to-end retention atypical for `self_P1`; nothing atypical for `self_P2`/`self_P3`                                                                                                                                      |
+| `samplesheet_mixup.csv`: the third "personal" sample is someone else                    | `WITHIN_PERSON`: identity `one_sample_differs`, naming that sample                                                                                                                                                                                    |
+| `samplesheet_norepeats.csv`: no repeat samples                                          | `WITHIN_PERSON`: change statistics not assessable, identity from the between-person comparison only                                                                                                                                                   |
 | Older age bands have a more even composition, so Shannon diversity rises with `age_cat` | `ALPHA_DIVERSITY` (mean Shannon 3.68 in the 20s rising to 4.04 in the 60s) and `BATCH_DIAGNOSE` (age R² 0.37, p = 0.001); the real-effect positive control is planned                                                                                 |
 | Study C carries _Bacteroides_ ×3, _Bifidobacterium_ ×2 and _Segatella_ ×0.3             | `BATCH_DIAGNOSE`: R²(study) 0.34, p = 0.001, so the orientation-only banner is raised; between the unbiased studies A and B, R² 0.02. `BATCH_CORRECT` removes it (study medians of _Bacteroides_ 0.14 / 0.12 / 0.30 before, 0.17 / 0.15 / 0.16 after) |
 | A genus doubled on purpose in half of every study (made by `POSITIVE_CONTROL` itself)   | `POSITIVE_CONTROL`: 94% of the planted shift survives correction, p = 7.6 × 10⁻⁶, so the gate passes                                                                                                                                                  |

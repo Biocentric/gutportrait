@@ -6,7 +6,7 @@
                     {
                         "id": "native"
                     },
-                    "native.genus_counts.tsv:md5,9ef003305a6d10070b9a2c58aa0c56fd"
+                    "native.genus_counts.tsv:md5,5153f62533e05e2ddbe99a997a972ca4"
                 ]
             ],
             [
@@ -14,7 +14,7 @@
                     {
                         "id": "native"
                     },
-                    "native.collapse_stats.tsv:md5,f658390a79a8dd5181130ebc4b90b961"
+                    "native.collapse_stats.tsv:md5,0ac39eed37364fd090380b0b6e35e2aa"
                 ]
             ],
             {
@@ -34,7 +34,7 @@
                 ]
             }
         ],
-        "timestamp": "2026-10-18T14:31:39.086182381",
+        "timestamp": "2026-10-18T18:21:07.536731993",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.04.3"

@@ -1,0 +1,121 @@
+name: "within_person"
+description: "Changes between the personal samples against a within-person noise floor borrowed from panel repeat samples, and a sample-identity check"
+keywords:
+  - microbiome
+  - within-person variation
+  - longitudinal
+  - sample identity
+tools:
+  - "pandas":
+      description: "Powerful data structures for data analysis in Python"
+      homepage: "https://pandas.pydata.org"
+      documentation: "https://pandas.pydata.org/docs/"
+      licence: ["BSD-3-Clause"]
+      identifier: ""
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map with run information, e.g. `[ id:'native' ]`
+    - genus_counts:
+        type: file
+        description: Uncorrected genus counts from COLLAPSE_GENUS, all samples
+        pattern: "*.genus_counts.tsv"
+    - alpha:
+        type: file
+        description: Per-sample alpha diversity from ALPHA_DIVERSITY
+        pattern: "*.alpha_diversity.tsv"
+  - samplesheet:
+      type: file
+      description: The validated pipeline samplesheet, with `repeat` rows naming their panel person in `subject`
+      pattern: "*.csv"
+
+output:
+  reference:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.within_person_reference.tsv":
+          type: file
+          description: One row per reference pair (two samples of one panel person) - distances, change in Shannon diversity and the leave-one-out count of changed genera
+          pattern: "*.within_person_reference.tsv"
+  summary:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.within_person_summary.tsv":
+          type: file
+          description: Within- and between-person distance distributions, pooled and per study
+          pattern: "*.within_person_summary.tsv"
+  changes:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.personal_changes.tsv":
+          type: file
+          description: One row per pair of personal samples - distance and its within- and between-person percentiles, change in Shannon diversity, number of changed genera against the number expected by chance, and caveats
+          pattern: "*.personal_changes.tsv"
+  genus_changes:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.personal_genus_changes.tsv":
+          type: file
+          description: Per pair of personal samples and genus, the change in CLR abundance in units of that genus's ordinary within-person change
+          pattern: "*.personal_genus_changes.tsv"
+  identity:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.identity.tsv":
+          type: file
+          description: Per pair of personal samples, whether they look like one person, and one overall verdict
+          pattern: "*.identity.tsv"
+  versions_python:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "python":
+          type: string
+          description: The name of the tool
+      - 'python3 --version | sed "s/Python //"':
+          type: eval
+          description: The expression to obtain the version of the tool
+  versions_pandas:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "pandas":
+          type: string
+          description: The name of the tool
+      - 'python3 -c "import pandas; print(pandas.__version__)"':
+          type: eval
+          description: The expression to obtain the version of the tool
+  versions_numpy:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "numpy":
+          type: string
+          description: The name of the tool
+      - 'python3 -c "import numpy; print(numpy.__version__)"':
+          type: eval
+          description: The expression to obtain the version of the tool
+
+topics:
+  versions:
+    - - process:
+          type: string
+          description: The process the versions were collected from
+      - tool:
+          type: string
+          description: The tool name the version was collected for
+      - version:
+          type: string
+          description: The version of the tool
+
+authors:
+  - "@Biocentric"
+maintainers:
+  - "@Biocentric"

@@ -12,7 +12,8 @@ process DEVIATION_FLAGS {
     path samplesheet
 
     output:
-    tuple val(meta), path("*.deviation_flags.tsv"), emit: flags
+    tuple val(meta), path("*.deviation_flags.tsv") , emit: flags
+    tuple val(meta), path("*.flag_calibration.tsv"), emit: calibration
     tuple val("${task.process}"), val('python'), eval('python3 --version | sed "s/Python //"'), emit: versions_python, topic: versions
     tuple val("${task.process}"), val('pandas'), eval('python3 -c "import pandas; print(pandas.__version__)"'), emit: versions_pandas, topic: versions
     tuple val("${task.process}"), val('numpy'), eval('python3 -c "import numpy; print(numpy.__version__)"'), emit: versions_numpy, topic: versions
@@ -38,5 +39,6 @@ process DEVIATION_FLAGS {
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
     touch ${prefix}.deviation_flags.tsv
+    touch ${prefix}.flag_calibration.tsv
     """
 }

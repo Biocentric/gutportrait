@@ -43,8 +43,16 @@ output:
           description: Groovy Map with run information
       - "*.deviation_flags.tsv":
           type: file
-          description: Every check for every personal sample, raised or not - value, threshold, detail, arm and the cross-arm agreement status
+          description: Every check for every personal sample, raised or not - value, threshold, detail, how often the check fires for reference people, arm and the cross-arm agreement status
           pattern: "*.deviation_flags.tsv"
+  calibration:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.flag_calibration.tsv":
+          type: file
+          description: Per check, how often it fires for panel people treated as personal samples (leave-one-out), with the nominal rate
+          pattern: "*.flag_calibration.tsv"
   versions_python:
     - - "${task.process}":
           type: string

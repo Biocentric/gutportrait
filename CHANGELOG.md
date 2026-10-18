@@ -45,6 +45,29 @@ Initial release of Biocentric/gutportrait, created with the [nf-core](https://nf
   personal positioning against the between-study spread (D12).
 - `PERCENTILE_STABILITY` and `TAXON_PERCENTILES_CORRECTED`: every genus position against
   the uncorrected and the corrected panel; positions that change category are unstable.
+- Samplesheet role `repeat` and column `subject`: a second sample of a panel person, used
+  only as the within-person reference. Validation rejects a repeat that names no panel
+  person of its study.
+- `WITHIN_PERSON`: differences between the personal samples against a noise floor borrowed
+  from the panel's repeat pairs (distance percentiles, change in Shannon diversity, per-genus
+  change in units of its ordinary within-person change, with a leave-one-out count of what
+  changes by chance), and a sample-identity check that tells a large change in a few genera
+  from a different person (`--change_z`, `--min_reference_pairs`,
+  `--identity_within_percentile`, `--identity_between_percentile`).
+- `TECHNICAL_QC`: retention at every step of ampliseq's read tracking, analysed reads and the
+  unassigned fraction, against the panel; atypical beyond a modified z-score of `--qc_max_z`
+  against the pooled panel and every study.
+- `DEVIATION_FLAGS` calibration: every check is run leave-one-out on the panel, and each flag
+  carries its `reference_fire_rate`; `flag_calibration.tsv` lists the rates. New check
+  `excess_extremes`: more genera in the outer percentile tails than panel people have.
+- Test fixture: the three personal samples are now one invented person; 16 panel people have
+  a repeat sample; read tracking (`overall_summary.tsv`) with one technical outlier; and two
+  more samplesheets, one without repeats and one with a sample mix-up.
+
+### `Changed`
+
+- `beta_outlier` compares a sample with the panel's leave-one-out distances to its centroid,
+  so that the reference distances are measured the way a personal sample's is.
 
 ### `Fixed`
 

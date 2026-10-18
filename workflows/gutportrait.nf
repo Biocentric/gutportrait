@@ -12,6 +12,8 @@ include { BATCH_CORRECT          } from '../modules/local/batch_correct/main'
 include { POSITIVE_CONTROL       } from '../modules/local/positive_control/main'
 include { BATCH_DOMINANCE        } from '../modules/local/batch_dominance/main'
 include { PERCENTILE_STABILITY   } from '../modules/local/percentile_stability/main'
+include { WITHIN_PERSON          } from '../modules/local/within_person/main'
+include { TECHNICAL_QC           } from '../modules/local/technical_qc/main'
 include { TAXON_PERCENTILES as TAXON_PERCENTILES_CORRECTED } from '../modules/local/taxon_percentiles/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
@@ -49,6 +51,7 @@ workflow GUTPORTRAIT {
     //
     def asv_table = file("${ampliseq_results}/dada2/ASV_table.tsv", checkIfExists: true)
     def taxonomy  = file("${ampliseq_results}/dada2/ASV_tax_species.${taxonomy_db}.tsv", checkIfExists: true)
+    def read_tracking = file("${ampliseq_results}/overall_summary.tsv", checkIfExists: true)
 
     //
     // STAGE 2 - HARMONISE: collapse to genus, keeping unassigned reads as an explicit row
@@ -115,10 +118,28 @@ workflow GUTPORTRAIT {
     )
 
     //
-    // STAGE 5 - DEVIATE: extremes-only flags. Provisional until both arms agree.
+    // STAGE 5 - DEVIATE: extremes-only flags, each with how often it fires for an ordinary
+    // panel person (leave-one-out calibration). Provisional until both arms agree.
     //
     DEVIATION_FLAGS (
         channel.of([ [ id: arm ], asv_table, taxonomy ]).join(ALPHA_DIVERSITY.out.alpha),
+        ch_samplesheet
+    )
+
+    //
+    // STAGE 5 - CHANGE: differences between the personal samples against a within-person
+    // noise floor borrowed from panel repeat samples, and whether they are one person
+    //
+    WITHIN_PERSON (
+        COLLAPSE_GENUS.out.counts.join(ALPHA_DIVERSITY.out.alpha),
+        ch_samplesheet
+    )
+
+    //
+    // GATES - technical comparability: were the personal samples processed like the panel?
+    //
+    TECHNICAL_QC (
+        COLLAPSE_GENUS.out.stats.map { meta, stats -> [ meta, read_tracking, stats ] },
         ch_samplesheet
     )
 

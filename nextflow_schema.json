@@ -251,6 +251,51 @@
                     "maximum": 100,
                     "description": "Stability: genus positions at or above this percentile count as high.",
                     "fa_icon": "fas fa-arrow-up"
+                },
+                "qc_max_z": {
+                    "type": "number",
+                    "default": 3.5,
+                    "exclusiveMinimum": 0,
+                    "description": "Technical comparability: a read-retention metric is atypical when its modified z-score against the panel, and against every panel study, is beyond this on its worse side.",
+                    "fa_icon": "fas fa-microscope"
+                }
+            }
+        },
+        "within_person_options": {
+            "title": "Within-person change and identity options",
+            "type": "object",
+            "fa_icon": "fas fa-user-clock",
+            "description": "How changes between the personal samples are judged against the within-person variation of panel people sampled twice (samplesheet role repeat).",
+            "properties": {
+                "change_z": {
+                    "type": "number",
+                    "default": 2,
+                    "exclusiveMinimum": 0,
+                    "description": "A genus changed between two personal samples when its CLR change exceeds this many times its ordinary within-person change.",
+                    "fa_icon": "fas fa-exchange-alt"
+                },
+                "min_reference_pairs": {
+                    "type": "integer",
+                    "default": 10,
+                    "minimum": 2,
+                    "description": "Fewer panel repeat pairs than this: no within-person reference is used, and the change statistics are not assessable.",
+                    "fa_icon": "fas fa-users"
+                },
+                "identity_within_percentile": {
+                    "type": "number",
+                    "default": 95,
+                    "minimum": 50,
+                    "maximum": 100,
+                    "description": "Identity: a distance at or below this percentile of the within-person pairs is ordinary for one person.",
+                    "fa_icon": "fas fa-user-check"
+                },
+                "identity_between_percentile": {
+                    "type": "number",
+                    "default": 5,
+                    "minimum": 0,
+                    "maximum": 50,
+                    "description": "Identity: a distance below this percentile of the pairs of different people is ordinary for one person.",
+                    "fa_icon": "fas fa-user-friends"
                 }
             }
         },
@@ -417,6 +462,9 @@
         },
         {
             "$ref": "#/$defs/gate_options"
+        },
+        {
+            "$ref": "#/$defs/within_person_options"
         },
         {
             "$ref": "#/$defs/institutional_config_options"

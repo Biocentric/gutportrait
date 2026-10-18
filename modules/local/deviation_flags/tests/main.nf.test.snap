@@ -1,12 +1,20 @@
 {
-    "synthetic fixture: only self_P3 raises flags": {
+    "synthetic fixture: only self_P3 raises flags, each with its reference fire rate": {
         "content": [
             [
                 [
                     {
                         "id": "native"
                     },
-                    "native.deviation_flags.tsv:md5,15197b00c610c02d74761064815590f2"
+                    "native.deviation_flags.tsv:md5,be86716f7c73b4f722dd72c83688f114"
+                ]
+            ],
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.flag_calibration.tsv:md5,ea3cf50f1ec279277cecb910c86944e9"
                 ]
             ],
             {
@@ -33,7 +41,7 @@
                 ]
             }
         ],
-        "timestamp": "2026-10-18T14:31:58.226360019",
+        "timestamp": "2026-10-18T18:21:26.652463466",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.04.3"

@@ -91,7 +91,7 @@ workflow PIPELINE_INITIALISATION {
     //
     def rows = samplesheetToList(input, "${projectDir}/assets/schema_input.json")
     def roles = validateSamplesheetRows(rows, min_panel_samples)
-    log.info "Samplesheet: ${roles.personal} personal and ${roles.panel} panel sample(s) across ${roles.studies} studies"
+    log.info "Samplesheet: ${roles.personal} personal and ${roles.panel} panel sample(s) across ${roles.studies} studies, ${roles.repeats} repeat sample(s)"
     def ch_samplesheet = channel.value(file(input, checkIfExists: true))
 
     emit:
@@ -181,7 +181,17 @@ def validateSamplesheetRows(rows, min_panel_samples) {
         error("Samplesheet: study ${mixed.unique().join(', ')} contains both personal and panel samples. Give the personal samples their own study, so they are never mistaken for a reference batch.")
     }
 
-    return [personal: n_personal, panel: n_panel, studies: n_studies]
+    // A repeat is a second sample of a panel person: it must name that person in `subject`
+    // (the subject of a panel row, which defaults to its sample name), in the same study.
+    def panel_subjects = metas.findAll { meta -> meta.role == 'panel' }
+        .collect { meta -> "${meta.study}\t${meta.subject ?: meta.id}".toString() } as Set
+    def repeats = metas.findAll { meta -> meta.role == 'repeat' }
+    def orphans = repeats.findAll { meta -> !meta.subject || !panel_subjects.contains("${meta.study}\t${meta.subject}".toString()) }
+    if (orphans) {
+        error("Samplesheet: repeat sample(s) ${orphans.collect { meta -> meta.id }.join(', ')} must name, in 'subject', a panel person of the same study (the panel row's subject, or its sample name if subject is empty).")
+    }
+
+    return [personal: n_personal, panel: n_panel, studies: n_studies, repeats: repeats.size()]
 }
 //
 // Generate methods description for MultiQC

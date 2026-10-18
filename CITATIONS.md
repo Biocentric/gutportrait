@@ -59,6 +59,10 @@ full list for the version you ran.
 
   > Gloor GB, Macklaim JM, Pawlowsky-Glahn V, Egozcue JJ. Microbiome Datasets Are Compositional: And This Is Not Optional. Front Microbiol. 2017 Nov 15;8:2224. doi: 10.3389/fmicb.2017.02224. PubMed PMID: 29187837; PubMed Central PMCID: PMC5695134.
 
+- Modified z-score, for the technical comparability check
+
+  > Iglewicz B, Hoaglin DC. How to Detect and Handle Outliers. Milwaukee: ASQC Quality Press; 1993. (ASQC Basic References in Quality Control, vol. 16.)
+
 ## Software packaging/containerisation tools
 
 - [Anaconda](https://anaconda.com)

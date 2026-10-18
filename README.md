@@ -179,10 +179,11 @@ panel_ERR123,panel,PRJEB00000,RUN_B,,,,
 | column                                 | required | meaning                                                                                                                  |
 | -------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `sample`                               | yes      | must match a column of ampliseq's `ASV_table.tsv` exactly                                                                |
-| `role`                                 | yes      | `personal` or `panel`                                                                                                    |
+| `role`                                 | yes      | `personal`, `panel`, or `repeat` for a second sample of a panel person (the within-person noise floor)                   |
 | `study`                                | yes      | the batch unit. Your samples get a study of their own — mixing roles within one study is an error                        |
 | `run`                                  | yes      | sequencing run, the same value as in the ampliseq samplesheet                                                            |
 | `age_cat`, `sex`, `bmi_cat`, `country` | no       | used for cohort matching and the real-effect positive control. Leave empty where unknown, which is normal for ENA panels |
+| `context`, `subject`                   | no       | when a personal sample was taken; and, for `repeat` rows, which panel person the sample belongs to                       |
 
 ```bash
 nextflow run Biocentric/gutportrait -profile singularity \
@@ -227,6 +228,11 @@ parameter with a strict default, and the report states the values it used.
   only if it is larger than the largest between-study difference in the panel. Anything
   else is demoted to _"orientation only"_, and if study explains more than 10% of the
   variance overall, the report says so at the top, in those words.
+- **Technical comparability.** Each of your samples is compared with the panel at every
+  step of ampliseq's read tracking. A sample that lost far more reads than the samples of
+  every reference study is marked, and its results carry that note.
+- **Calibration.** Every deviation check is also run on each panel person, against the
+  others. A check that fires for many ordinary people is reported with that rate next to it.
 
 ---
 
@@ -244,8 +250,9 @@ parameter with a strict default, and the report states the values it used.
 | Position     | `TAXON_PERCENTILES`: per-genus CLR percentile of each personal sample against the panel                             | ✅ implemented, against the **whole, uncorrected** panel for now. Matching and correction arrive with Integrate      |
 | Position     | `ALPHA_DIVERSITY`: rarefied Shannon, richness and evenness, with pooled and per-study position                      | ✅ implemented                                                                                                       |
 | Position     | cohort matching, beta position, enterosignatures, lifestyle contrasts                                               | planned                                                                                                              |
-| Deviate      | `DEVIATION_FLAGS`: the seven extremes-only checks of DECISIONS.md D12, against the between-study spread             | ✅ implemented, single-arm: the cross-arm agreement rule needs both arms                                             |
-| Longitudinal | within-person noise floor, behind `--longitudinal`                                                                  | planned                                                                                                              |
+| Deviate      | `DEVIATION_FLAGS`: the extremes-only checks of DECISIONS.md D12, each calibrated on the panel (leave-one-out)       | ✅ implemented, single-arm: the cross-arm agreement rule needs both arms                                             |
+| Gates        | `TECHNICAL_QC`: read retention at every ampliseq step, against the panel                                            | ✅ implemented                                                                                                       |
+| Longitudinal | `WITHIN_PERSON`: changes between your samples against a noise floor borrowed from panel repeat samples; identity    | ✅ implemented                                                                                                       |
 | Report       | English, HTML and PDF                                                                                               | planned                                                                                                              |
 
 Until the gates exist, a percentile from this pipeline is a position, not a finding.

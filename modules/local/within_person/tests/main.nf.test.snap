@@ -1,0 +1,116 @@
+{
+    "a sample mix-up: the identity check points at the sample from someone else": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.identity.tsv:md5,114d4b9fdc1ecb00c1091fa2ed6415d0"
+                ]
+            ]
+        ],
+        "timestamp": "2026-10-18T18:23:54.821569271",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.04.3"
+        }
+    },
+    "synthetic fixture: one person, and the planted bloom stands out from the noise floor": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.within_person_reference.tsv:md5,48cb3bb49812d7086d9ace3a5791456a"
+                ]
+            ],
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.within_person_summary.tsv:md5,329b0cfa8b57060a2fe9c70e66e96224"
+                ]
+            ],
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.personal_changes.tsv:md5,ff913359461707d8f2481a6583103274"
+                ]
+            ],
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.personal_genus_changes.tsv:md5,871db328335fb106b11d30ea94b9090d"
+                ]
+            ],
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.identity.tsv:md5,542900ef206ba49055154dc0e645f246"
+                ]
+            ],
+            {
+                "versions_numpy": [
+                    [
+                        "WITHIN_PERSON",
+                        "numpy",
+                        "1.26.4"
+                    ]
+                ],
+                "versions_pandas": [
+                    [
+                        "WITHIN_PERSON",
+                        "pandas",
+                        "2.2.1"
+                    ]
+                ],
+                "versions_python": [
+                    [
+                        "WITHIN_PERSON",
+                        "python",
+                        "3.12.3"
+                    ]
+                ]
+            }
+        ],
+        "timestamp": "2026-10-18T18:23:16.700586855",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.04.3"
+        }
+    },
+    "no repeat samples: no within-person reference, identity from the between-person half": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.personal_changes.tsv:md5,6d04c98b4d383b9c62be3b7e64488ead"
+                ]
+            ],
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.identity.tsv:md5,d3af72847ee81e3168ca915fe2226158"
+                ]
+            ]
+        ],
+        "timestamp": "2026-10-18T18:23:35.76707754",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.04.3"
+        }
+    }
+}

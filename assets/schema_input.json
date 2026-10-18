@@ -15,8 +15,8 @@
             },
             "role": {
                 "type": "string",
-                "enum": ["personal", "panel"],
-                "errorMessage": "role must be 'personal' (the samples being positioned) or 'panel' (the reference they are positioned against)",
+                "enum": ["personal", "panel", "repeat"],
+                "errorMessage": "role must be 'personal' (the samples being positioned), 'panel' (the reference they are positioned against) or 'repeat' (a second sample of a panel person, used only to measure within-person variation)",
                 "meta": ["role"]
             },
             "study": {
@@ -59,6 +59,13 @@
                 "description": "Optional free-text sampling context for personal samples, e.g. \"baseline\" or \"after a diet change\". Carried into the percentile, alpha and flag tables.",
                 "errorMessage": "context is free text and may be left empty",
                 "meta": ["context"]
+            },
+            "subject": {
+                "type": "string",
+                "pattern": "^\\S*$",
+                "description": "Optional person identifier. A repeat row names the panel person it belongs to; for panel rows it defaults to the sample name. Personal samples are always one person.",
+                "errorMessage": "subject must contain no spaces",
+                "meta": ["subject"]
             }
         },
         "required": ["sample", "role", "study", "run"]

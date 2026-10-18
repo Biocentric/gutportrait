@@ -1,0 +1,50 @@
+{
+    "synthetic fixture: only self_P1, which lost half its reads at filtering, is atypical": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.technical_metrics.tsv:md5,c86f2c641e70ed8a212807d6dae20f03"
+                ]
+            ],
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.technical_qc.tsv:md5,d68737cbe9288137b6af05cc8920014c"
+                ]
+            ],
+            {
+                "versions_numpy": [
+                    [
+                        "TECHNICAL_QC",
+                        "numpy",
+                        "1.26.4"
+                    ]
+                ],
+                "versions_pandas": [
+                    [
+                        "TECHNICAL_QC",
+                        "pandas",
+                        "2.2.1"
+                    ]
+                ],
+                "versions_python": [
+                    [
+                        "TECHNICAL_QC",
+                        "python",
+                        "3.12.3"
+                    ]
+                ]
+            }
+        ],
+        "timestamp": "2026-10-18T18:22:57.864768873",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.04.3"
+        }
+    }
+}

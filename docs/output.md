@@ -23,7 +23,9 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 - [Gates](#gates) - the injected-signal positive control and the batch-dominance rules
 - [Percentile stability](#percentile-stability) - which genus positions survive batch correction
 - [Alpha diversity](#alpha-diversity) - diversity at one fixed depth, and where each personal sample sits
-- [Deviation flags](#deviation-flags) - extremes-only checks for each personal sample
+- [Deviation flags](#deviation-flags) - extremes-only checks for each personal sample, each with how often it fires for an ordinary person
+- [Within-person change and identity](#within-person-change-and-identity) - how much your samples differ, against how much one person's samples ordinarily differ, and whether they are one person
+- [Technical comparability](#technical-comparability) - whether your samples were processed like the panel's, step by step
 - [MultiQC](#multiqc) - software versions, parameters and the methods text
 - [Pipeline information](#pipeline-information) - Report metrics generated during the workflow execution
 
@@ -223,7 +225,10 @@ Panel studies with fewer than `--min_study_n` samples are left out of the per-st
 
 - `flags/`
   - `<arm>.deviation_flags.tsv`: every check for every personal sample, raised or not, with
-    `value`, `threshold`, `detail`, `arm` and `agreement`.
+    `value`, `threshold`, `detail`, `reference_fire_rate`, `arm` and `agreement`.
+  - `<arm>.flag_calibration.tsv`: per check, how often it fires for panel people
+    (`reference_n`, `reference_fired`, `reference_fire_rate`), the `nominal_rate` it was
+    designed for, and a note.
 
 </details>
 
@@ -235,12 +240,24 @@ Panel studies with fewer than `--min_study_n` samples are left out of the per-st
 | `proteobacteria_bloom`       | phylum _Proteobacteria_ (SILVA) or _Pseudomonadota_ (GTDB), same rule                                                  |
 | `faecalibacterium_depletion` | genus _Faecalibacterium_ below the low percentile, same rule                                                           |
 | `core_genus_missing`         | a genus in ≥ `--core_prevalence` of the panel has no reads, although the panel median predicts ≥ `--core_min_expected` |
-| `beta_outlier`               | Aitchison distance to the panel centroid above the high percentile of the panel's own distances                        |
+| `beta_outlier`               | Aitchison distance to the panel centroid above the high percentile of the panel's own (leave-one-out) distances        |
+| `excess_extremes`            | more genera in the outer percentile tails than the high percentile of what panel people have                           |
+
+**Calibration.** How often would a check fire for an ordinary person? Every panel sample is
+treated as if it were a personal sample and checked against the panel without it, with the
+same code. `reference_fire_rate` is the share of panel people for whom the check fires. A
+check that fires for one ordinary person in five is weak evidence on its own; one that
+fires for nobody is strong. Missing core genera, for example, are common: with dozens of
+genera each present in 95% of people, many ordinary people lack one or two. The
+leave-one-out counts of extreme genera are also the reference for `excess_extremes`:
+everybody has some genera in the outer tails, roughly one in ten by chance alone, so only
+an excess over what panel people show is a flag.
 
 How to read it:
 
 - Every check is reported, so "nothing raised" is a visible result, and the strongest
   negative result 16S can give. It is not a certificate of health.
+- Read a raised flag next to its `reference_fire_rate`.
 - Abundance checks use relative abundance, so a flag reads as "31% against a panel 95th
   percentile of 2.6%". The distance check uses CLR.
 - Requiring a value to be extreme against **every** study, not just the pooled panel, is
@@ -251,6 +268,93 @@ How to read it:
 - Read each flag next to its sample's `context`. A flag that appears only in a sample taken
   just after an unusual event, such as travel or an illness, is a candidate for that event, not evidence
   about the usual state.
+
+### Within-person change and identity
+
+<details markdown="1">
+<summary>Output files</summary>
+
+- `within_person/`
+  - `<arm>.within_person_reference.tsv`: one row per reference pair (two samples of one
+    panel person, from the `repeat` rows): `aitchison`, `trimmed_distance`, `delta_shannon`,
+    `same_run`, and `genera_changed_loo`, the number of genera that changed more than usual,
+    each pair measured against the others.
+  - `<arm>.within_person_summary.tsv`: the within-person and between-person distributions of
+    both distances, pooled and per study.
+  - `<arm>.personal_changes.tsv`: one row per pair of your samples: the Aitchison distance
+    with its `within_person_percentile` and `between_person_percentile`, the change in
+    Shannon diversity (`delta_shannon`, with a z-score and a percentile against the
+    reference pairs), `genera_changed` against `genera_changed_expected`, and a `caveat`.
+  - `<arm>.personal_genus_changes.tsv`: per pair and genus: `z`, the change in CLR abundance
+    in units of that genus's ordinary within-person change (`ordinary_change_sd`); `changed`
+    when |z| exceeds `--change_z`; the direction and both relative abundances.
+  - `<arm>.identity.tsv`: per pair of your samples, a `verdict` with both distances and their
+    percentiles. The last row (`all`) is the overall verdict.
+
+</details>
+
+Two samples of one person are never identical. Whether a difference between your samples
+means anything depends on how much one person's samples ordinarily differ, and three
+samples of one person cannot measure that. The reference is borrowed from panel studies
+that sampled the same people twice (`repeat` rows, see
+[repeat samples](usage.md#repeat-samples)). Both references, two samples of one person and
+two different people, come from within one study, processed in one lab. Your samples are
+compared only with each other.
+
+How to read `personal_changes.tsv`:
+
+- `within_person_percentile` 80 means your two samples differ more than 80% of the
+  reference pairs do: an ordinary change. Near 100 is a change larger than nearly anyone's.
+- `genera_changed` counts genera that moved more than `--change_z` times their ordinary
+  change. Some always do, by chance: `genera_changed_expected` is the median for a
+  reference person, and `genera_changed_percentile` places your count among theirs.
+- The `caveat` notes when your two samples were sequenced in different runs while most
+  reference pairs were not: part of the difference may then be technical.
+- The reference pairs were taken at the intervals their studies chose. Over a longer
+  interval, larger changes are expected.
+
+Identity, from `identity.tsv`. You sent in your own samples, so one person is the starting
+assumption, and the check looks for evidence against it, as a guard against a mix-up:
+
+| Verdict                     | Meaning                                                                                                                                                                                                     |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `same_person`               | the Aitchison distance is ordinary for one person: at or below the `--identity_within_percentile` of the within-person pairs, or below the `--identity_between_percentile` of the pairs of different people |
+| `same_person_large_change`  | it is not, but the trimmed distance is: the difference sits in a few genera, as after a bloom or a crash of one group                                                                                       |
+| `possibly_different_people` | neither is: most genera differ, as between two people. Check for a sample mix-up                                                                                                                            |
+| `unclear`                   | without a within-person reference, a pair that is not closer than nearly all pairs of different people                                                                                                      |
+
+The trimmed distance is the Aitchison distance after centring the CLR differences on their
+median and leaving out the 5% of genera that changed most, so that one genus cannot make a
+sample look like someone else's. The overall row reads `one_person`, `one_sample_differs`
+(naming the sample), `possibly_different_people` or `unclear`.
+
+### Technical comparability
+
+<details markdown="1">
+<summary>Output files</summary>
+
+- `qc/`
+  - `<arm>.technical_metrics.tsv`: per sample: `input_reads`, `primer_retention`,
+    `filter_retention`, `denoise_retention`, `merge_rate`, `chimera_retention`,
+    `end_to_end_retention`, `analysed_reads` and `unassigned_fraction`, from ampliseq's
+    `overall_summary.tsv` and the genus collapse.
+  - `<arm>.technical_qc.tsv`: per personal sample and metric: `panel_percentile`,
+    `panel_median`, `modified_z` and `atypical`; one `overall` row per sample.
+
+</details>
+
+A profile can look unusual for technical reasons: a sample that lost most of its reads at
+quality filtering, merged poorly or came out mostly chimeric has a different composition for
+reasons that have nothing to do with the gut. Each step of ampliseq's read tracking is turned
+into a retention rate and compared with the panel. A metric is `atypical` when, on its worse
+side, its modified z-score (Iglewicz and Hoaglin) is beyond `--qc_max_z` against the pooled
+panel and against every panel study. Rates within 5 percentage points of the panel median
+are never atypical, and read counts are compared on a log scale.
+
+Atypical is not an error. It means the sample was processed differently, and its other
+results should be read with that in mind. When all your samples are atypical in the same
+metrics, your lab's protocol differed from the panel's (read length, amplicon, chemistry),
+which is worth knowing in itself.
 
 ### MultiQC
 

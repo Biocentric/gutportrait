@@ -1,0 +1,49 @@
+nextflow_process {
+
+    name "Test Process TECHNICAL_QC"
+    script "../main.nf"
+    process "TECHNICAL_QC"
+
+    tag "modules"
+    tag "modules_local"
+    tag "technical_qc"
+
+    test("synthetic fixture: only self_P1, which lost half its reads at filtering, is atypical") {
+
+        setup {
+            run("COLLAPSE_GENUS") {
+                script "../../collapse_genus/main.nf"
+                process {
+                    """
+                    input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true), file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_tax_species.silva.tsv", checkIfExists: true) ])
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = COLLAPSE_GENUS.out.stats.map { meta, stats -> [ meta, file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/overall_summary.tsv", checkIfExists: true), stats ] }
+                input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet.csv", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def qc = path(process.out.qc.get(0).get(1)).readLines()
+            assert qc.any { line -> line.startsWith('self_P1\t') && line.contains('\tfilter_retention\t') && line.contains('\tyes\t') }
+            def overall = qc.findAll { line -> line.contains('\toverall\t') }.collect { line ->
+                def f = line.split('\t')
+                "${f[0]}:${f[8]}".toString()
+            }
+            assert overall == [ 'self_P1:yes', 'self_P2:no', 'self_P3:no' ]
+            assert snapshot(
+                process.out.metrics,
+                process.out.qc,
+                process.out.findAll { key, val -> key.toString().startsWith('versions') }
+            ).match()
+        }
+    }
+}

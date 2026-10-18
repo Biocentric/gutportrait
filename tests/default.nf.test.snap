@@ -48,6 +48,16 @@
                     "pandas": "2.2.1",
                     "python": "3.12.3"
                 },
+                "TECHNICAL_QC": {
+                    "numpy": "1.26.4",
+                    "pandas": "2.2.1",
+                    "python": "3.12.3"
+                },
+                "WITHIN_PERSON": {
+                    "numpy": "1.26.4",
+                    "pandas": "2.2.1",
+                    "python": "3.12.3"
+                },
                 "Workflow": {
                     "Biocentric/gutportrait": "v1.0.0dev"
                 }
@@ -64,6 +74,7 @@
                 "batch/native.permanova.tsv",
                 "flags",
                 "flags/native.deviation_flags.tsv",
+                "flags/native.flag_calibration.tsv",
                 "gates",
                 "gates/native.gates.tsv",
                 "gates/native.positive_control.tsv",
@@ -87,30 +98,47 @@
                 "percentiles/native.percentile_stability.tsv",
                 "percentiles/native.taxon_percentiles.tsv",
                 "pipeline_info",
-                "pipeline_info/gutportrait_software_mqc_versions.yml"
+                "pipeline_info/gutportrait_software_mqc_versions.yml",
+                "qc",
+                "qc/native.technical_metrics.tsv",
+                "qc/native.technical_qc.tsv",
+                "within_person",
+                "within_person/native.identity.tsv",
+                "within_person/native.personal_changes.tsv",
+                "within_person/native.personal_genus_changes.tsv",
+                "within_person/native.within_person_reference.tsv",
+                "within_person/native.within_person_summary.tsv"
             ],
             [
-                "native.alpha_diversity.tsv:md5,95158f3e9ebca61dbdbe31eed4528ef3",
+                "native.alpha_diversity.tsv:md5,24174c58b9e313a27f0d42ae8584f34b",
                 "native.alpha_params.tsv:md5,3df7941e7bebf4eb058b31ee05040181",
-                "native.alpha_position.tsv:md5,d78579ae21a9d7430e7347c73ff24d9c",
+                "native.alpha_position.tsv:md5,2c2bf318a597fedc2aa7c091f2d622f0",
                 "native.batch_summary.tsv:md5,7f506d0aab5dfe3080d29b35f66d71ee",
                 "native.correction_summary.tsv:md5,b0ab0cd70592d9952f8658f6a97b01e4",
-                "native.genus_counts_corrected.tsv:md5,809567dbb041d4ae62e4481297fb5704",
+                "native.genus_counts_corrected.tsv:md5,f00e0e47717bb067b34917cab0643d5f",
                 "native.permanova.tsv:md5,169b1f24f3eefaadd85f08a9d0d0754d",
-                "native.deviation_flags.tsv:md5,15197b00c610c02d74761064815590f2",
-                "native.gates.tsv:md5,2064794c105ac5d33b8472df2ceece02",
+                "native.deviation_flags.tsv:md5,be86716f7c73b4f722dd72c83688f114",
+                "native.flag_calibration.tsv:md5,ea3cf50f1ec279277cecb910c86944e9",
+                "native.gates.tsv:md5,f751669bd15d28a6203a59d8d66f8bb5",
                 "native.positive_control.tsv:md5,0926e3bb92dfc0f17e9cdc8ad55c707a",
-                "native.collapse_stats.tsv:md5,f658390a79a8dd5181130ebc4b90b961",
-                "native.genus_counts.tsv:md5,9ef003305a6d10070b9a2c58aa0c56fd",
+                "native.collapse_stats.tsv:md5,0ac39eed37364fd090380b0b6e35e2aa",
+                "native.genus_counts.tsv:md5,5153f62533e05e2ddbe99a997a972ca4",
                 "multiqc_citations.txt:md5,4c806e63a283ec1b7e78cdae3a923d4f",
                 "native.corrected.percentile_params.tsv:md5,2dc2fb756866a94001fe5d3baab354c0",
-                "native.corrected.taxon_percentiles.tsv:md5,240b5ec1209aebbf8ff4d7df696d6a9c",
+                "native.corrected.taxon_percentiles.tsv:md5,3cdd83f71747f87c410042f275dac720",
                 "native.percentile_params.tsv:md5,2dc2fb756866a94001fe5d3baab354c0",
-                "native.percentile_stability.tsv:md5,a80ca8dbfe80ce29cc36f0b1ba3a7a21",
-                "native.taxon_percentiles.tsv:md5,3640c099a0cae2856e5f428da8eb35da"
+                "native.percentile_stability.tsv:md5,9a8a9fa920ffdb135f6d9ba789b4b4bd",
+                "native.taxon_percentiles.tsv:md5,f3b3c4e388d3250a8f941c62e3e9ce95",
+                "native.technical_metrics.tsv:md5,c86f2c641e70ed8a212807d6dae20f03",
+                "native.technical_qc.tsv:md5,d68737cbe9288137b6af05cc8920014c",
+                "native.identity.tsv:md5,542900ef206ba49055154dc0e645f246",
+                "native.personal_changes.tsv:md5,ff913359461707d8f2481a6583103274",
+                "native.personal_genus_changes.tsv:md5,871db328335fb106b11d30ea94b9090d",
+                "native.within_person_reference.tsv:md5,48cb3bb49812d7086d9ace3a5791456a",
+                "native.within_person_summary.tsv:md5,329b0cfa8b57060a2fe9c70e66e96224"
             ]
         ],
-        "timestamp": "2026-10-18T15:12:11.465109426",
+        "timestamp": "2026-10-18T18:24:36.45420927",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.04.3"
