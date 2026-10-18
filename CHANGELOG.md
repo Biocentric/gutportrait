@@ -65,6 +65,13 @@ Initial release of Biocentric/gutportrait, created with the [nf-core](https://nf
   a repeat sample; read tracking (`overall_summary.tsv`) with one technical outlier; and two
   more samplesheets, one without repeats and one with a sample mix-up.
 
+- `MATCH_COHORT`: the comparison with people like you. Panel people who share the personal
+  samples' `age_cat`, `sex` and `bmi_cat`, widened step by step in the D12 order (adjacent age
+  bands, then drop BMI, then drop sex) until `--min_matched` (50) qualify; otherwise no matched
+  comparison, and the ladder is reported with its counts. Genus and diversity percentiles
+  against the matched people, next to the whole-panel ones. A panel band cell may hold a set
+  (`30s|40s|50s`) for a study's inclusion criteria; it matches only when every band in the set
+  does. The report gains a section "Compared with people like you".
 - `REPORT`: the plain-language report, as one self-contained HTML page and an A4 PDF from
   the same content. Caveats first; every section says what it shows, gives the result in
   words, and ends with what it does not mean; a confidence label per section is set by the

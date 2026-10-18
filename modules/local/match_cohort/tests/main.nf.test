@@ -1,0 +1,148 @@
+nextflow_process {
+
+    name "Test Process MATCH_COHORT"
+    script "../main.nf"
+    process "MATCH_COHORT"
+
+    tag "modules"
+    tag "modules_local"
+    tag "match_cohort"
+
+    test("synthetic fixture: no level reaches 50 people, so there is no matched comparison") {
+
+        setup {
+            run("COLLAPSE_GENUS") {
+                script "../../collapse_genus/main.nf"
+                process {
+                    """
+                    input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true), file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_tax_species.silva.tsv", checkIfExists: true) ])
+                    """
+                }
+            }
+            run("ALPHA_DIVERSITY") {
+                script "../../alpha_diversity/main.nf"
+                process {
+                    """
+                    input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true) ])
+                    input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet.csv", checkIfExists: true)
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = COLLAPSE_GENUS.out.counts.join(ALPHA_DIVERSITY.out.alpha)
+                input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet.csv", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def ladder = path(process.out.ladder.get(0).get(1)).readLines()
+            assert ladder.size() == 5
+            assert ladder[1].contains('insufficient: no level reaches 50 matched people')
+            assert path(process.out.percentiles.get(0).get(1)).readLines().size() == 1
+            assert snapshot(
+                process.out.ladder,
+                process.out.samples,
+                process.out.percentiles,
+                process.out.alpha,
+                process.out.findAll { key, val -> key.toString().startsWith('versions') }
+            ).match()
+        }
+    }
+
+    test("with a minimum of 10: matched after widening to age bands only, from two studies") {
+
+        config "./matched.config"
+
+        setup {
+            run("COLLAPSE_GENUS") {
+                script "../../collapse_genus/main.nf"
+                process {
+                    """
+                    input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true), file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_tax_species.silva.tsv", checkIfExists: true) ])
+                    """
+                }
+            }
+            run("ALPHA_DIVERSITY") {
+                script "../../alpha_diversity/main.nf"
+                process {
+                    """
+                    input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true) ])
+                    input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet.csv", checkIfExists: true)
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = COLLAPSE_GENUS.out.counts.join(ALPHA_DIVERSITY.out.alpha)
+                input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet.csv", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def chosen = path(process.out.ladder.get(0).get(1)).readLines().findAll { line -> line.split('\t')[5] == 'yes' }
+            assert chosen.size() == 1 && chosen[0].startsWith('drop_sex\t')
+            assert chosen[0].contains('STUDY_A 7, STUDY_B 7')
+            assert path(process.out.samples.get(0).get(1)).readLines().size() == 15
+            assert snapshot(
+                process.out.ladder,
+                process.out.samples,
+                process.out.percentiles,
+                process.out.alpha
+            ).match()
+        }
+    }
+
+    test("a study that publishes only an age range matches only where every band in it qualifies") {
+
+        setup {
+            run("COLLAPSE_GENUS") {
+                script "../../collapse_genus/main.nf"
+                process {
+                    """
+                    input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true), file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_tax_species.silva.tsv", checkIfExists: true) ])
+                    """
+                }
+            }
+            run("ALPHA_DIVERSITY") {
+                script "../../alpha_diversity/main.nf"
+                process {
+                    """
+                    input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true) ])
+                    input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet_ranges.csv", checkIfExists: true)
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = COLLAPSE_GENUS.out.counts.join(ALPHA_DIVERSITY.out.alpha)
+                input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet_ranges.csv", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def rows = path(process.out.ladder.get(0).get(1)).readLines().collect { line -> line.split('\t') }
+            def level = { name -> rows.find { r -> r[0] == name } }
+            // the person is in their 40s: STUDY_C's "30s|40s|50s" lies inside 30s-50s, so STUDY_C
+            // joins once sex is no longer required, and never at the exact age band
+            assert level('drop_sex')[3] == '26' && level('drop_sex')[4] == 'STUDY_A 7, STUDY_B 7, STUDY_C 12'
+            assert !level('exact')[4].contains('STUDY_C') && !level('drop_bmi')[4].contains('STUDY_C')
+            assert snapshot(process.out.ladder).match()
+        }
+    }
+}

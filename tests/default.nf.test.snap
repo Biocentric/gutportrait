@@ -29,6 +29,11 @@
                     "pandas": "2.2.1",
                     "python": "3.12.3"
                 },
+                "MATCH_COHORT": {
+                    "numpy": "1.26.4",
+                    "pandas": "2.2.1",
+                    "python": "3.12.3"
+                },
                 "PERCENTILE_STABILITY": {
                     "numpy": "1.26.4",
                     "pandas": "2.2.1",
@@ -77,6 +82,11 @@
                 "batch/native.correction_summary.tsv",
                 "batch/native.genus_counts_corrected.tsv",
                 "batch/native.permanova.tsv",
+                "cohort",
+                "cohort/native.cohort_ladder.tsv",
+                "cohort/native.matched_alpha.tsv",
+                "cohort/native.matched_percentiles.tsv",
+                "cohort/native.matched_samples.tsv",
                 "flags",
                 "flags/native.deviation_flags.tsv",
                 "flags/native.flag_calibration.tsv",
@@ -125,6 +135,10 @@
                 "native.correction_summary.tsv:md5,b0ab0cd70592d9952f8658f6a97b01e4",
                 "native.genus_counts_corrected.tsv:md5,f00e0e47717bb067b34917cab0643d5f",
                 "native.permanova.tsv:md5,169b1f24f3eefaadd85f08a9d0d0754d",
+                "native.cohort_ladder.tsv:md5,559efa056c1a9ec414f86dddb0c0d176",
+                "native.matched_alpha.tsv:md5,5bfa5af6ad759047b72a487bc2a72fe0",
+                "native.matched_percentiles.tsv:md5,1b82e8d33c6ea136906827dcd556f483",
+                "native.matched_samples.tsv:md5,b27a7deb5758e1692af43454b004e3d6",
                 "native.deviation_flags.tsv:md5,be86716f7c73b4f722dd72c83688f114",
                 "native.flag_calibration.tsv:md5,ea3cf50f1ec279277cecb910c86944e9",
                 "native.gates.tsv:md5,f751669bd15d28a6203a59d8d66f8bb5",
@@ -139,8 +153,8 @@
                 "native.taxon_percentiles.tsv:md5,f3b3c4e388d3250a8f941c62e3e9ce95",
                 "native.technical_metrics.tsv:md5,c86f2c641e70ed8a212807d6dae20f03",
                 "native.technical_qc.tsv:md5,d68737cbe9288137b6af05cc8920014c",
-                "native.report.html:md5,6d4a4f2df28f1c9c4fcb47c87818abdc",
-                "native.report.pdf:md5,ff09342778b0ab0ff52c99d77088b89a",
+                "native.report.html:md5,e38beadfb004ca6bb7e32c222484532c",
+                "native.report.pdf:md5,66186c5a8adc783ff4fbc6407b4207e3",
                 "native.identity.tsv:md5,542900ef206ba49055154dc0e645f246",
                 "native.personal_changes.tsv:md5,ec0f2b5dbb66224dd40913c8da4f6c96",
                 "native.personal_genus_changes.tsv:md5,871db328335fb106b11d30ea94b9090d",
@@ -148,7 +162,7 @@
                 "native.within_person_summary.tsv:md5,329b0cfa8b57060a2fe9c70e66e96224"
             ]
         ],
-        "timestamp": "2026-10-18T20:15:54.402279822",
+        "timestamp": "2026-10-18T20:45:26.652099033",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.04.3"

@@ -37,6 +37,11 @@ if (is.null(opt$counts) || is.null(opt$samplesheet)) stop("--counts and --sample
 counts <- read.delim(opt$counts, check.names = FALSE, row.names = 1)
 sheet <- read.csv(opt$samplesheet, colClasses = "character", na.strings = character(0))
 sheet[is.na(sheet)] <- ""
+# A set of bands ("30s|40s", a study's inclusion criteria) says nothing about one person:
+# it is unknown for every per-person model here.
+for (v in intersect(c("age_cat", "sex", "bmi_cat"), colnames(sheet))) {
+    sheet[[v]][grepl("|", sheet[[v]], fixed = TRUE)] <- ""
+}
 panel <- sheet[sheet$role == "panel", , drop = FALSE]
 missing <- setdiff(panel$sample, colnames(counts))
 if (length(missing) > 0) stop("panel samples missing from the counts table: ", paste(head(missing), collapse = ", "))

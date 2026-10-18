@@ -33,7 +33,7 @@ ones: this repository is public, and a fixture is no place for a real person's p
 
 OUTPUT LAYOUT  mirrors an ampliseq 2.18.0 results directory, so the pipeline reads it the
 same way it reads real output:
-  synthetic/samplesheet.csv  (and variants: _collinear, _norepeats, _mixup)
+  synthetic/samplesheet.csv  (and variants: _collinear, _norepeats, _mixup, _ranges)
   synthetic/ampliseq_results/overall_summary.tsv               (ampliseq's read tracking)
   synthetic/ampliseq_results/dada2/ASV_table.tsv
   synthetic/ampliseq_results/dada2/ASV_tax_species.silva.tsv   (SILVA column layout)
@@ -282,6 +282,11 @@ def main():
     # Without repeat samples there is no within-person reference: the identity check falls
     # back to its between-person half and the change statistics are not assessable.
     write('samplesheet_norepeats.csv', [r for r in rows() if r[1] != 'repeat'])
+
+    # A study that publishes only its inclusion criteria: STUDY_C people are "30 to 59", a set
+    # of age bands. Cohort matching may use them only where every band in the set qualifies,
+    # and the batch models must treat the set as unknown.
+    write('samplesheet_ranges.csv', [r[:4] + ['30s|40s|50s'] + r[5:] if r[2] == 'STUDY_C' else r for r in rows()])
 
     # A lab mix-up: the third "personal" sample is in fact someone else (panel person
     # studya_07, who has no repeat), which the identity check must point out. studya_07 is an

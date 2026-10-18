@@ -33,20 +33,20 @@
             },
             "age_cat": {
                 "type": "string",
-                "enum": ["20s", "30s", "40s", "50s", "60s", "70+"],
-                "errorMessage": "age_cat must be one of 20s, 30s, 40s, 50s, 60s, 70+ (American Gut's adult bands), or left empty",
+                "pattern": "^((20s|30s|40s|50s|60s|70\\+)(\\|(20s|30s|40s|50s|60s|70\\+))*)?$",
+                "errorMessage": "age_cat must be one of 20s, 30s, 40s, 50s, 60s, 70+ (American Gut's adult bands), or several separated by | for a study-level range (panel rows only), or left empty",
                 "meta": ["age_cat"]
             },
             "sex": {
                 "type": "string",
-                "enum": ["male", "female", "other"],
-                "errorMessage": "sex must be male, female or other, or left empty",
+                "pattern": "^((male|female|other)(\\|(male|female|other))*)?$",
+                "errorMessage": "sex must be one of male, female or other, or several separated by | for a study-level range (panel rows only), or left empty",
                 "meta": ["sex"]
             },
             "bmi_cat": {
                 "type": "string",
-                "enum": ["Underweight", "Normal", "Overweight", "Obese"],
-                "errorMessage": "bmi_cat must be Underweight, Normal, Overweight or Obese (American Gut's bands), or left empty",
+                "pattern": "^((Underweight|Normal|Overweight|Obese)(\\|(Underweight|Normal|Overweight|Obese))*)?$",
+                "errorMessage": "bmi_cat must be one of Underweight, Normal, Overweight or Obese (American Gut's bands), or several separated by | for a study-level range (panel rows only), or left empty",
                 "meta": ["bmi_cat"]
             },
             "country": {

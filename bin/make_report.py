@@ -479,6 +479,10 @@ class Data:
         self.identity = t.get('.identity.tsv')
         self.qc_metrics = t.get('.technical_metrics.tsv')
         self.qc = t.get('.technical_qc.tsv')
+        self.ladder = t.get('.cohort_ladder.tsv')
+        self.matched = t.get('.matched_samples.tsv')
+        self.matched_pct = t.get('.matched_percentiles.tsv')
+        self.matched_alpha = t.get('.matched_alpha.tsv')
 
     def label(self, s, context=True):
         c = self.sheet.at[s, 'context'] if s in self.sheet.index else ''
@@ -510,6 +514,13 @@ class Data:
             sub = self.qc[(self.qc['sample'] == s) & (self.qc['metric'] != 'overall') & (self.qc['atypical'] == 'yes')]
             out[s] = list(sub['metric'])
         return out
+
+    def cohort(self):
+        """(matched?, chosen ladder row or None, minimum) from the cohort ladder."""
+        if self.ladder is None or not len(self.ladder):
+            return None, None, None
+        chosen = self.ladder[self.ladder['chosen'] == 'yes']
+        return len(chosen) > 0, (chosen.iloc[0] if len(chosen) else None), int(num(self.ladder.iloc[0]['min_matched']))
 
     def stable_extremes(self):
         """{genus: {sample: 'high'|'low'>> for positions extreme before AND after correction."""
@@ -567,10 +578,21 @@ def caveats(d):
                    'among the reference people is explained by which study they come from, above the '
                    'alarm level of %.0f%%. Every comparison with the panel is orientation only.'
                    % (100 * num(bg['value']), 100 * num(bg['threshold'])))
-    out.append('**The reference people were not matched to you** on age, sex or body-mass index. The public '
-               'studies publish little about each person, and matching is not yet part of the pipeline. The '
-               'panel describes these %s, not people like you in particular.'
-               % plural(len(d.panel), 'person', 'people'))
+    matched, row, minimum = d.cohort()
+    if matched:
+        out.append('**The comparisons use the whole panel, people of all ages, both sexes and every build.** A '
+                   'comparison with the %s who share your bands is in [People like you](#cohort).'
+                   % plural(int(num(row['n_matched'])), 'reference person', 'reference people'))
+    elif matched is None:
+        out.append('**The reference people were not matched to you** on age, sex or body-mass index. The panel '
+                   'describes these %s, not people like you in particular.' % plural(len(d.panel), 'person', 'people'))
+    else:
+        most = int(col(d.ladder, 'n_matched').max())
+        out.append('**The reference people could not be matched to you** on age, sex or body-mass index: at most %s '
+                   'share your bands, and at least %d are needed for a stable comparison. The panel describes these '
+                   '%s, not people like you in particular (see [People like you](#cohort)).'
+                   % (plural(most, 'reference person', 'reference people'), minimum,
+                      plural(len(d.panel), 'person', 'people')))
     atyp = d.qc_atypical()
     bad = sorted({m for v in atyp.values() for m in v}, key=list(QC_TEXT).index)
     if bad:
@@ -695,6 +717,20 @@ def section_glance(d):
                   if hi or lo else '.'))
         rows.append(['Which genera stand out?', txt, '<<%s>>' % ('indicative' if status == 'interpretable'
                                                                 and not d.banner()[0] else 'orientation')])
+    matched, crow, minimum = d.cohort()
+    if matched is not None:
+        if matched:
+            txt = 'Yes: %s (%s).' % (plural(int(num(crow['n_matched'])), 'reference person', 'reference people'),
+                                     crow['rule'])
+            if d.matched_alpha is not None and len(d.matched_alpha):
+                sh = d.matched_alpha[d.matched_alpha['metric'] == 'shannon']
+                txt += ' Your Shannon diversity among them: %s percentile.' % pct_range(col(sh, 'percentile_matched'))
+            lvl = cohort_level(d)[0]
+        else:
+            txt = ('No: at most %s share your bands; at least %d are needed.'
+                   % (plural(int(col(d.ladder, 'n_matched').max()), 'reference person', 'reference people'), minimum))
+            lvl = 'na'
+        rows.append(['Can you be compared with people like you?', txt, '<<%s>>' % lvl])
     if d.changes is not None and len(d.changes) and str(d.changes.iloc[0]['within_person_percentile']):
         w = col(d.changes, 'within_person_percentile')
         over = d.changes[col(d.changes, 'genera_changed_percentile') >= 95]
@@ -956,6 +992,100 @@ def section_genera(d):
         'Healthy people differ widely in their genera, and for almost none is a healthy range known at this '
         'level. A position becomes interesting when it is extreme, stable, repeated in every sample, and beyond '
         'the laboratory spread; even then, it describes, it does not diagnose.']))
+    return blocks
+
+
+def cohort_level(d):
+    matched, row, _ = d.cohort()
+    if not matched:
+        return 'na', 'too few reference people share your bands'
+    studies = [x for x in str(row['per_study']).split(', ') if x]
+    status, _ = d.positioning()
+    if len(studies) < 2:
+        return 'orientation', 'all matched people come from one study'
+    if status != 'interpretable' or d.banner()[0]:
+        return 'orientation', 'your profile is within the laboratory spread'
+    return 'indicative', 'matched people from %d studies' % len(studies)
+
+
+def section_cohort(d):
+    matched, row, minimum = d.cohort()
+    if matched is None:
+        return []
+    level, why = cohort_level(d)
+    lad = d.ladder
+    blocks = [Heading('Compared with people like you', 2, 'cohort', (level, why))]
+    bands = lad.iloc[0]['personal_bands']
+    blocks.append(Para('The comparisons above use every reference person: all ages, both sexes, every build. Here '
+                       'you are compared only with reference people who share your bands%s. The match starts exact '
+                       'and is widened one step at a time until at least %d people qualify; a person counts only if '
+                       'their band is known, never guessed.' % (' (%s)' % bands.replace('age_cat', 'age')
+                                                                  .replace('bmi_cat', 'BMI') if bands else '',
+                                                                  minimum)))
+    rows = []
+    for _, r in lad.iterrows():
+        cells = [r['rule'][0].upper() + r['rule'][1:], thousands(num(r['n_matched'])),
+                 re.sub(r' (\d+)', r' (\1)', r['per_study']) or '–']
+        rows.append(['**%s**' % c for c in cells] if r['chosen'] == 'yes' else cells)
+    blocks.append(Table(['Who counts as a match', 'Reference people', 'From study'], rows, [0.52, 0.18, 0.30],
+                        ['l', 'r', 'l'], 'The step used is in bold.' if matched else ''))
+    if d.ladder.iloc[0]['note']:
+        blocks.append(Para('Note: %s.' % d.ladder.iloc[0]['note'], 'small'))
+    if not matched:
+        most = int(col(lad, 'n_matched').max())
+        gaps = []
+        for study in d.studies.index:
+            ids = [s for s in d.panel if d.sheet.at[s, 'study'] == study]
+            unknown = [name for c, name in (('age_cat', 'age'), ('sex', 'sex'), ('bmi_cat', 'BMI'))
+                       if c in d.sheet.columns and not any(d.sheet.loc[ids, c].str.len() > 0)]
+            if unknown:
+                gaps.append('%s publishes no %s per person' % (study, listing(unknown)))
+        blocks.append(Para('**No matched comparison.** At most %s share your bands, below the %d needed for stable '
+                           'percentiles, so everything in this report is against the whole panel.%s'
+                           % (plural(most, 'reference person', 'reference people'), minimum,
+                              (' ' + '; '.join(gaps)[0].upper() + '; '.join(gaps)[1:] + '.') if gaps else '')))
+        blocks.append(Para('A matched comparison needs reference studies that publish each person\'s age, sex and BMI. '
+                           'Adding such studies to the panel (for example American Gut, in the V4 comparison) is what '
+                           'would make it possible.'))
+        return blocks
+    studies = [x for x in str(row['per_study']).split(', ') if x]
+    if len(studies) < 2:
+        blocks.append(Callout('warn', 'All matched people come from one study', [
+            'The matched people all come from %s. Their laboratory differs from yours as much as any study does, '
+            'so a shift between the whole-panel and the matched comparison mixes "people like you" with "that '
+            'study\'s laboratory". Read it as orientation.' % studies[0].split(' ')[0]]))
+    if d.matched_alpha is not None and len(d.matched_alpha):
+        trows = []
+        for s in d.personal:
+            cells = ['[[%d]] Sample %d' % (d.no[s], d.no[s])]
+            for m in ('shannon', 'observed', 'pielou'):
+                r = d.matched_alpha[(d.matched_alpha['sample'] == s) & (d.matched_alpha['metric'] == m)]
+                cells.append('%s (all: %s)' % (ordinal(num(r.iloc[0]['percentile_matched'])),
+                                               ordinal(num(r.iloc[0]['percentile_panel']))) if len(r) else '–')
+            trows.append(cells)
+        blocks.append(Para('**Diversity among people like you**, as a percentile, with the whole-panel percentile in '
+                           'brackets:', 'subhead'))
+        blocks.append(Table(['', 'Shannon', 'Observed ASVs', 'Evenness'], trows, [0.22, 0.26, 0.26, 0.26],
+                            ['l', 'r', 'r', 'r']))
+    if d.matched_pct is not None and len(d.matched_pct):
+        mp = d.matched_pct
+        changed = mp[mp['changed'] == 'yes']
+        blocks.append(Para('**Genus positions.** %s of %s positions fall in a different band (low, middle, high) among '
+                           'people like you than among the whole panel.'
+                           % (thousands(len(changed)), thousands(len(mp)))))
+        if len(changed):
+            top = changed.assign(a=col(changed, 'shift').abs()).sort_values(['a', 'genus'], ascending=[False, True]).head(15)
+            rows = [['*%s*' % r['genus'], d.mark(r['sample']), '%s (%s)' % (ordinal(num(r['percentile_panel'])),
+                                                                         r['category_panel']),
+                     '%s (%s)' % (ordinal(num(r['percentile_matched'])), r['category_matched'])]
+                    for _, r in top.iterrows()]
+            blocks.append(Table(['Genus', 'Sample', 'Among all reference people', 'Among people like you'], rows,
+                                [0.34, 0.12, 0.27, 0.27], ['l', 'c', 'r', 'r'],
+                                'The largest shifts, up to 15.'))
+    blocks.append(Callout('note', 'What it does not mean', [
+        'Sharing age, sex and BMI bands does not make the matched people like you in every way: diet, country, '
+        'medication and their laboratory still differ. A smaller group also gives coarser percentiles: among 50 '
+        'people, one step is 2 percentile points.']))
     return blocks
 
 
@@ -1239,7 +1369,8 @@ def section_methods(d):
 
 def build(d):
     blocks = section_title(d) + section_first(d) + section_glance(d) + section_samples(d)
-    blocks += section_diversity(d) + section_position(d) + section_genera(d) + section_checks(d)
+    blocks += section_diversity(d) + section_position(d) + section_genera(d) + section_cohort(d)
+    blocks += section_checks(d)
     blocks += section_changes(d) + section_technical(d) + section_trust(d) + section_glossary()
     blocks += section_methods(d)
     return blocks

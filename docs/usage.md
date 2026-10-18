@@ -39,9 +39,9 @@ cohort_S0001,panel,COHORT_X,RUN_D,30s,male,Overweight,Germany,,
 | `role`    | yes      | `personal` for your samples, `panel` for reference samples, `repeat` for a second sample of a panel person (see [repeat samples](#repeat-samples)).                                                                           |
 | `study`   | yes      | The batch unit, usually the ENA project. Batch diagnosis and correction work per study. Personal samples need a study of their own: a study that contains both roles is rejected, so your samples can never pass for a batch. |
 | `run`     | yes      | The sequencing run (flowcell), the same value as the `run` column of the ampliseq samplesheet. It is the unit DADA2 learned its error model on.                                                                               |
-| `age_cat` | no       | `20s`, `30s`, `40s`, `50s`, `60s` or `70+`.                                                                                                                                                                                   |
-| `sex`     | no       | `male`, `female` or `other`.                                                                                                                                                                                                  |
-| `bmi_cat` | no       | `Underweight`, `Normal`, `Overweight` or `Obese`.                                                                                                                                                                             |
+| `age_cat` | no       | `20s`, `30s`, `40s`, `50s`, `60s` or `70+`. For panel rows, a set such as `30s                                                                                                                                                | 40s | 50s` records a study's inclusion criteria when the person's own band is not published (see [cohort matching](#cohort-matching)). |
+| `sex`     | no       | `male`, `female` or `other`; for panel rows also a set, as for `age_cat`.                                                                                                                                                     |
+| `bmi_cat` | no       | `Underweight`, `Normal`, `Overweight` or `Obese`; for panel rows also a set, as for `age_cat`.                                                                                                                                |
 | `country` | no       | Free text.                                                                                                                                                                                                                    |
 | `context` | no       | Free text, for personal samples: when or why the sample was taken, e.g. `baseline` or `after a diet change`. It is carried into the percentile, alpha and flag tables, so every number can be read next to it.                |
 | `subject` | no       | For `repeat` rows, required: the panel person the sample belongs to, given as that panel row's `subject`, or its `sample` name when `subject` is empty. Your own samples are always taken to be one person.                   |
@@ -56,13 +56,37 @@ The run stops before any work starts when:
 - a sample name appears twice, or does not match the pattern above;
 - there is no personal sample, or there are fewer panel samples than `--min_panel_samples`;
 - a study contains both personal and panel samples;
-- a `repeat` row's `subject` names no panel person of the same study.
+- a `repeat` row's `subject` names no panel person of the same study;
+- a personal sample gives a set of bands (with `|`) instead of single values.
 
 It stops at the first module when a samplesheet sample has no column in the ASV table.
 Samples that are in the ASV table but not in the samplesheet are ignored, with a note in
 the task log; that is how you analyse a subset of one large ampliseq run.
 
 An [example samplesheet](../assets/samplesheet.csv) is provided with the pipeline.
+
+### Cohort matching
+
+The comparisons use the whole panel by default. `MATCH_COHORT` adds a comparison with the
+panel people who share your bands, the `age_cat`, `sex` and `bmi_cat` of your samples. The
+match starts exact and is widened one step at a time, in a fixed order, until at least
+`--min_matched` people (default 50) qualify:
+
+1. same age band, sex and BMI band;
+2. age within one band either side, same sex and BMI band;
+3. age within one band either side, same sex;
+4. age within one band either side.
+
+If no step reaches the minimum, there is no matched comparison, and the report says how far
+the panel's metadata went. A panel person counts only if their band is **known** to satisfy
+the step: an empty cell never matches. Where a study publishes only its inclusion criteria,
+give the possible bands as a set, for example `30s|40s|50s` for "adults 30 to 50"; such a
+person matches only when every band in the set satisfies the step, so a match is never a
+guess. Sets are treated as unknown by the batch models, which need one value per person.
+
+Most public panels publish no per-person age or sex, so on an ENA-only panel a matched
+comparison is often impossible. Studies that publish them (American Gut, or a cohort shared
+on request) are what make it work.
 
 ### Repeat samples
 
@@ -127,6 +151,7 @@ results directory.
 | `--rarefaction_iterations` | `20`       | Rarefaction repeats averaged per sample.                                                                                                                                 |
 | `--permutations`           | `999`      | Permutations for the PERMANOVA tests.                                                                                                                                    |
 | `--banner_r2_study`        | `0.1`      | If study explains more of the panel's variance than this, every population claim is orientation only.                                                                    |
+| `--min_matched`            | `50`       | The smallest matched group a comparison with people like you is reported for (see [cohort matching](#cohort-matching)).                                                  |
 | `--seed`                   | `20261018` | Seed for rarefaction and permutations, so every run is reproducible.                                                                                                     |
 
 Deviation flags (DECISIONS.md D12):
@@ -178,20 +203,20 @@ samples of panel people, and three personal samples of one invented person, laid
 exactly like an ampliseq 2.18.0 results directory, read tracking included. Known signals
 are planted in it, so that every stage has an answer to recover:
 
-| Planted signal                                                                          | Recovered by                                                                                                                                                                                                                                          |
-| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Personal sample `self_P3` carries an _Escherichia-Shigella_ bloom (about 31% of reads)  | `TAXON_PERCENTILES` (100th percentile) and `DEVIATION_FLAGS` (Enterobacteriaceae and Proteobacteria blooms, beta outlier and an excess of extreme genera, all raised; nothing raised for `self_P1`/`self_P2`)                                         |
-| The three personal samples are one person, sampled three times                          | `WITHIN_PERSON`: identity `one_person`; the two pairs with `self_P3` are `same_person_large_change`, because the difference sits in one genus                                                                                                         |
-| The bloom is a change within that person                                                | `WITHIN_PERSON`: _Escherichia-Shigella_ changes by z = 17 between `self_P1` and `self_P3`; 5 genera changed against 1 expected by chance, and 1 between `self_P1` and `self_P2`                                                                       |
-| Personal sample `self_P1` lost half its reads at quality filtering                      | `TECHNICAL_QC`: filter and end-to-end retention atypical for `self_P1`; nothing atypical for `self_P2`/`self_P3`                                                                                                                                      |
-| `samplesheet_mixup.csv`: the third "personal" sample is someone else                    | `WITHIN_PERSON`: identity `one_sample_differs`, naming that sample                                                                                                                                                                                    |
-| `samplesheet_norepeats.csv`: no repeat samples                                          | `WITHIN_PERSON`: change statistics not assessable, identity from the between-person comparison only                                                                                                                                                   |
-| Every result above                                                                      | `REPORT`: one self-contained HTML page and an A4 PDF that explain each of them in plain language, with the bloom, the technical outlier and the identity verdict in the "At a glance" table                                                           |
-| Older age bands have a more even composition, so Shannon diversity rises with `age_cat` | `ALPHA_DIVERSITY` (mean Shannon 3.68 in the 20s rising to 4.04 in the 60s) and `BATCH_DIAGNOSE` (age R² 0.37, p = 0.001); the real-effect positive control is planned                                                                                 |
-| Study C carries _Bacteroides_ ×3, _Bifidobacterium_ ×2 and _Segatella_ ×0.3             | `BATCH_DIAGNOSE`: R²(study) 0.34, p = 0.001, so the orientation-only banner is raised; between the unbiased studies A and B, R² 0.02. `BATCH_CORRECT` removes it (study medians of _Bacteroides_ 0.14 / 0.12 / 0.30 before, 0.17 / 0.15 / 0.16 after) |
-| A genus doubled on purpose in half of every study (made by `POSITIVE_CONTROL` itself)   | `POSITIVE_CONTROL`: 94% of the planted shift survives correction, p = 7.6 × 10⁻⁶, so the gate passes                                                                                                                                                  |
-| Study C has no per-sample metadata, like the ENA panels                                 | `BATCH_DIAGNOSE` tests the metadata variables on studies A and B only; cohort matching (planned) must fall back to "unmatched" for C                                                                                                                  |
-| Personal samples carry a `context` label                                                | every personal-sample table carries it through                                                                                                                                                                                                        |
+| Planted signal                                                                          | Recovered by                                                                                                                                                                                                                                                                                                                                           |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Personal sample `self_P3` carries an _Escherichia-Shigella_ bloom (about 31% of reads)  | `TAXON_PERCENTILES` (100th percentile) and `DEVIATION_FLAGS` (Enterobacteriaceae and Proteobacteria blooms, beta outlier and an excess of extreme genera, all raised; nothing raised for `self_P1`/`self_P2`)                                                                                                                                          |
+| The three personal samples are one person, sampled three times                          | `WITHIN_PERSON`: identity `one_person`; the two pairs with `self_P3` are `same_person_large_change`, because the difference sits in one genus                                                                                                                                                                                                          |
+| The bloom is a change within that person                                                | `WITHIN_PERSON`: _Escherichia-Shigella_ changes by z = 17 between `self_P1` and `self_P3`; 5 genera changed against 1 expected by chance, and 1 between `self_P1` and `self_P2`                                                                                                                                                                        |
+| Personal sample `self_P1` lost half its reads at quality filtering                      | `TECHNICAL_QC`: filter and end-to-end retention atypical for `self_P1`; nothing atypical for `self_P2`/`self_P3`                                                                                                                                                                                                                                       |
+| `samplesheet_mixup.csv`: the third "personal" sample is someone else                    | `WITHIN_PERSON`: identity `one_sample_differs`, naming that sample                                                                                                                                                                                                                                                                                     |
+| `samplesheet_norepeats.csv`: no repeat samples                                          | `WITHIN_PERSON`: change statistics not assessable, identity from the between-person comparison only                                                                                                                                                                                                                                                    |
+| Every result above                                                                      | `REPORT`: one self-contained HTML page and an A4 PDF that explain each of them in plain language, with the bloom, the technical outlier and the identity verdict in the "At a glance" table                                                                                                                                                            |
+| Older age bands have a more even composition, so Shannon diversity rises with `age_cat` | `ALPHA_DIVERSITY` (mean Shannon 3.68 in the 20s rising to 4.04 in the 60s) and `BATCH_DIAGNOSE` (age R² 0.37, p = 0.001); the real-effect positive control is planned                                                                                                                                                                                  |
+| Study C carries _Bacteroides_ ×3, _Bifidobacterium_ ×2 and _Segatella_ ×0.3             | `BATCH_DIAGNOSE`: R²(study) 0.34, p = 0.001, so the orientation-only banner is raised; between the unbiased studies A and B, R² 0.02. `BATCH_CORRECT` removes it (study medians of _Bacteroides_ 0.14 / 0.12 / 0.30 before, 0.17 / 0.15 / 0.16 after)                                                                                                  |
+| A genus doubled on purpose in half of every study (made by `POSITIVE_CONTROL` itself)   | `POSITIVE_CONTROL`: 94% of the planted shift survives correction, p = 7.6 × 10⁻⁶, so the gate passes                                                                                                                                                                                                                                                   |
+| Study C has no per-sample metadata, like the ENA panels                                 | `BATCH_DIAGNOSE` tests the metadata variables on studies A and B only. `MATCH_COHORT` never matches anyone from study C; with the default `--min_matched 50` no step of the ladder qualifies (2, 4, 6, 14 people), so there is no matched comparison; with a minimum of 10 the match widens to age bands only (14 people, 7 each from studies A and B) |
+| Personal samples carry a `context` label                                                | every personal-sample table carries it through                                                                                                                                                                                                                                                                                                         |
 
 The fixture is invented, including the personal samples and their metadata.
 `python tests/fixtures/make_synthetic_fixture.py` regenerates it byte-identically.

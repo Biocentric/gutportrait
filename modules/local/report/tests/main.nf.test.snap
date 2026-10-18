@@ -6,7 +6,7 @@
                     {
                         "id": "native"
                     },
-                    "native.report.html:md5,817d64299987546c04a00b9492dbf102"
+                    "native.report.html:md5,6f8410105d95856e923c4aa1ab3cbcb3"
                 ]
             ],
             [
@@ -14,7 +14,7 @@
                     {
                         "id": "native"
                     },
-                    "native.report.pdf:md5,de658b228b31b7e69dd15e29a8323610"
+                    "native.report.pdf:md5,515c53ded67e9aeff29c12bec265adda"
                 ]
             ],
             {
@@ -41,7 +41,7 @@
                 ]
             }
         ],
-        "timestamp": "2026-10-18T20:14:49.79981767",
+        "timestamp": "2026-10-18T20:44:29.141831452",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.04.3"

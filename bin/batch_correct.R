@@ -30,6 +30,11 @@ if (is.null(opt$counts) || is.null(opt$samplesheet)) stop("--counts and --sample
 counts <- as.matrix(read.delim(opt$counts, check.names = FALSE, row.names = 1))
 sheet <- read.csv(opt$samplesheet, colClasses = "character", na.strings = character(0))
 sheet[is.na(sheet)] <- ""
+# A set of bands ("30s|40s", a study's inclusion criteria) says nothing about one person:
+# it is unknown for every per-person model here.
+for (v in intersect(c("age_cat", "sex", "bmi_cat"), colnames(sheet))) {
+    sheet[[v]][grepl("|", sheet[[v]], fixed = TRUE)] <- ""
+}
 panel <- sheet[sheet$role == "panel", , drop = FALSE]
 rownames(panel) <- panel$sample
 panel$study <- factor(panel$study)

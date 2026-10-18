@@ -24,6 +24,7 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 - [Gates](#gates) - the injected-signal positive control and the batch-dominance rules
 - [Percentile stability](#percentile-stability) - which genus positions survive batch correction
 - [Alpha diversity](#alpha-diversity) - diversity at one fixed depth, and where each personal sample sits
+- [Cohort matching](#cohort-matching) - the same comparisons against the panel people who share your age, sex and BMI bands
 - [Deviation flags](#deviation-flags) - extremes-only checks for each personal sample, each with how often it fires for an ordinary person
 - [Within-person change and identity](#within-person-change-and-identity) - how much your samples differ, against how much one person's samples ordinarily differ, and whether they are one person
 - [Technical comparability](#technical-comparability) - whether your samples were processed like the panel's, step by step
@@ -49,9 +50,9 @@ log-ratio is. It explains every table in this document:
   the report does not do (diagnose, score health, advise on diet), and the caveats of this
   particular run, decided by the gates (for example, a profile within the laboratory spread,
   an unmatched panel, or samples processed differently from the panel).
-- **At a glance** answers seven questions in one sentence each, from "are your samples from
+- **At a glance** answers eight questions in one sentence each, from "are your samples from
   one person?" to "were they processed like the reference samples?".
-- Each later section (diversity, overall position, genus by genus, checks for gross
+- Each later section (diversity, overall position, genus by genus, compared with people like you, checks for gross
   abnormalities, changes between your samples, technical comparability, how far the panel
   can be trusted) says what it shows, gives your result in words, shows a chart, and ends
   with **what it does not mean**.
@@ -238,6 +239,31 @@ seen in the panel lies at most q95 + that shift from the pooled centroid. A pers
 beyond the bound cannot be explained as an ordinary person measured in a shifted lab or
 cohort; one within it can, so its deviation is not read as biology. The gate needs at least
 two panel studies with `--min_study_n` samples each; with fewer, it is `not_assessable`.
+
+### Cohort matching
+
+<details markdown="1">
+<summary>Output files</summary>
+
+- `cohort/`
+  - `<arm>.cohort_ladder.tsv`: one row per step of the matching ladder: the criteria, the
+    number of matched panel people, how many from each study, whether the step was used,
+    and the overall `status` (matched, or insufficient).
+  - `<arm>.matched_samples.tsv`: the matched panel people and their bands; empty when no
+    step reached `--min_matched`.
+  - `<arm>.matched_percentiles.tsv`: per genus and personal sample, the CLR percentile among
+    the matched people next to the whole-panel percentile, both bands (low, middle, high,
+    at the stability thresholds) and whether the band changed.
+  - `<arm>.matched_alpha.tsv`: the same for Shannon diversity, observed ASVs and evenness.
+
+</details>
+
+The ladder and its rules are described in [usage](usage.md#cohort-matching). The genus set,
+pseudocount and CLR are those of the whole-panel percentiles, so the two percentiles differ
+only in who is in the reference. Read a matched comparison with the study breakdown in
+`cohort_ladder.tsv`: when every matched person comes from one study, a shift between the two
+percentiles mixes "people like you" with that study's laboratory, and the report labels it
+orientation only.
 
 ### Alpha diversity
 

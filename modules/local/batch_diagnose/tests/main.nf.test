@@ -69,4 +69,34 @@ nextflow_process {
             ).match()
         }
     }
+
+    test("a set of age bands is a study's range, unknown per person: the models leave it out") {
+
+        setup {
+            run("COLLAPSE_GENUS") {
+                script "../../collapse_genus/main.nf"
+                process {
+                    """
+                    input[0] = channel.of([ [ id: 'native' ], file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_table.tsv", checkIfExists: true), file("${projectDir}/tests/fixtures/synthetic/ampliseq_results/dada2/ASV_tax_species.silva.tsv", checkIfExists: true) ])
+                    """
+                }
+            }
+        }
+
+        when {
+            process {
+                """
+                input[0] = COLLAPSE_GENUS.out.counts
+                input[1] = file("${projectDir}/tests/fixtures/synthetic/samplesheet_ranges.csv", checkIfExists: true)
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            def rows = path(process.out.permanova.get(0).get(1)).readLines().collect { line -> line.split('\t') }
+            def age = rows.find { r -> r[0] == 'study + age_cat' && r[1] == 'age_cat' }
+            assert age != null && age[6] == '24'
+        }
+    }
 }

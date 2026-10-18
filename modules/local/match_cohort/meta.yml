@@ -1,0 +1,113 @@
+name: "match_cohort"
+description: "Matched cohort - panel people who share the personal samples' age, sex and BMI bands, widened step by step, and the percentiles against them"
+keywords:
+  - microbiome
+  - cohort matching
+  - percentiles
+  - metadata
+tools:
+  - "pandas":
+      description: "Powerful data structures for data analysis in Python"
+      homepage: "https://pandas.pydata.org"
+      documentation: "https://pandas.pydata.org/docs/"
+      licence: ["BSD-3-Clause"]
+      identifier: ""
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map with run information, e.g. `[ id:'native' ]`
+    - genus_counts:
+        type: file
+        description: Uncorrected genus counts from COLLAPSE_GENUS, all samples
+        pattern: "*.genus_counts.tsv"
+    - alpha:
+        type: file
+        description: Per-sample alpha diversity from ALPHA_DIVERSITY
+        pattern: "*.alpha_diversity.tsv"
+  - samplesheet:
+      type: file
+      description: The validated pipeline samplesheet; its age_cat, sex and bmi_cat columns select the matched people
+      pattern: "*.csv"
+
+output:
+  ladder:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.cohort_ladder.tsv":
+          type: file
+          description: One row per matching level - criteria, matched people, per study, whether chosen - with the overall status
+          pattern: "*.cohort_ladder.tsv"
+  samples:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.matched_samples.tsv":
+          type: file
+          description: The matched panel people and their bands (empty when no level reaches the minimum)
+          pattern: "*.matched_samples.tsv"
+  percentiles:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.matched_percentiles.tsv":
+          type: file
+          description: Per genus and personal sample, the percentile among the matched people next to the whole-panel percentile, and whether the band changes
+          pattern: "*.matched_percentiles.tsv"
+  alpha:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.matched_alpha.tsv":
+          type: file
+          description: Per diversity metric and personal sample, the percentile among the matched people next to the whole-panel percentile
+          pattern: "*.matched_alpha.tsv"
+  versions_python:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "python":
+          type: string
+          description: The name of the tool
+      - 'python3 --version | sed "s/Python //"':
+          type: eval
+          description: The expression to obtain the version of the tool
+  versions_pandas:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "pandas":
+          type: string
+          description: The name of the tool
+      - 'python3 -c "import pandas; print(pandas.__version__)"':
+          type: eval
+          description: The expression to obtain the version of the tool
+  versions_numpy:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "numpy":
+          type: string
+          description: The name of the tool
+      - 'python3 -c "import numpy; print(numpy.__version__)"':
+          type: eval
+          description: The expression to obtain the version of the tool
+
+topics:
+  versions:
+    - - process:
+          type: string
+          description: The process the versions were collected from
+      - tool:
+          type: string
+          description: The tool name the version was collected for
+      - version:
+          type: string
+          description: The version of the tool
+
+authors:
+  - "@Biocentric"
+maintainers:
+  - "@Biocentric"

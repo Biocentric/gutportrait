@@ -136,6 +136,13 @@
                     "maximum": 1,
                     "description": "If study explains more than this share of panel variance (R2), every population claim is flagged orientation only.",
                     "fa_icon": "fas fa-flag"
+                },
+                "min_matched": {
+                    "type": "integer",
+                    "default": 50,
+                    "minimum": 2,
+                    "description": "Cohort matching: the smallest matched group of panel people a matched comparison is reported for. The match is widened step by step until it reaches this; if it never does, there is no matched comparison.",
+                    "fa_icon": "fas fa-user-friends"
                 }
             }
         },

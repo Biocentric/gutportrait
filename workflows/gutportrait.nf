@@ -14,6 +14,7 @@ include { BATCH_DOMINANCE        } from '../modules/local/batch_dominance/main'
 include { PERCENTILE_STABILITY   } from '../modules/local/percentile_stability/main'
 include { WITHIN_PERSON          } from '../modules/local/within_person/main'
 include { TECHNICAL_QC           } from '../modules/local/technical_qc/main'
+include { MATCH_COHORT           } from '../modules/local/match_cohort/main'
 include { REPORT                 } from '../modules/local/report/main'
 include { TAXON_PERCENTILES as TAXON_PERCENTILES_CORRECTED } from '../modules/local/taxon_percentiles/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
@@ -119,6 +120,16 @@ workflow GUTPORTRAIT {
     )
 
     //
+    // STAGE 4 - POSITION: compared with people like you. Panel people who share the personal
+    // samples' age, sex and BMI bands, widened step by step (D12); no matched comparison
+    // when no step reaches --min_matched people.
+    //
+    MATCH_COHORT (
+        COLLAPSE_GENUS.out.counts.join(ALPHA_DIVERSITY.out.alpha),
+        ch_samplesheet
+    )
+
+    //
     // STAGE 5 - DEVIATE: extremes-only flags, each with how often it fires for an ordinary
     // panel person (leave-one-out calibration). Provisional until both arms agree.
     //
@@ -161,7 +172,8 @@ workflow GUTPORTRAIT {
             DEVIATION_FLAGS.out.flags, DEVIATION_FLAGS.out.calibration,
             WITHIN_PERSON.out.reference, WITHIN_PERSON.out.summary, WITHIN_PERSON.out.changes,
             WITHIN_PERSON.out.genus_changes, WITHIN_PERSON.out.identity,
-            TECHNICAL_QC.out.metrics, TECHNICAL_QC.out.qc
+            TECHNICAL_QC.out.metrics, TECHNICAL_QC.out.qc,
+            MATCH_COHORT.out.ladder, MATCH_COHORT.out.samples, MATCH_COHORT.out.percentiles, MATCH_COHORT.out.alpha
         )
         .map { _meta, table -> table }
         .collect()

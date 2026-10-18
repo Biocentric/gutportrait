@@ -19,8 +19,8 @@ defensible comparison.** The two run side by side, and this README explains exac
 > end-to-end on real data (see [Validation](#validation)). Of gutportrait itself, genus
 > collapse, per-genus CLR percentiles, alpha diversity, batch diagnosis and correction, both
 > gates, a stability check, calibrated deviation flags, within-person change, technical
-> comparability and the plain-language report are implemented and pass the test profile.
-> Cohort matching and the V4-projected arm are not built yet (see
+> comparability, the plain-language report and
+> cohort matching are implemented; the V4-projected arm is not built yet (see
 > [Implementation status](#implementation-status)). Nothing here is medical advice and
 > nothing it produces is diagnostic.
 
@@ -239,22 +239,23 @@ parameter with a strict default, and the report states the values it used.
 
 ## Implementation status
 
-| Stage        | Module                                                                                                              | Status                                                                                                               |
-| ------------ | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Harmonise    | `COLLAPSE_GENUS`: genus collapse from named-rank taxonomy; unassigned reads stay in as an explicit `Unassigned` row | ✅ implemented                                                                                                       |
-| Harmonise    | phylogenetic placement for the V4-projected arm                                                                     | planned. First test whether ampliseq's own `--run_pplace` accepts a Greengenes2 backbone; if so, no module is needed |
-| Integrate    | `BATCH_DIAGNOSE`: PERMANOVA (vegan `adonis2`) on Aitchison distance, R²(study) and study + variable models          | ✅ implemented (diagnosis only)                                                                                      |
-| Integrate    | `BATCH_CORRECT`: MMUPHin harmonises the panel studies; personal samples are never corrected                         | ✅ implemented                                                                                                       |
-| Gates        | `POSITIVE_CONTROL`: injected signal must survive correction, or the run stops                                       | ✅ implemented                                                                                                       |
-| Gates        | `BATCH_DOMINANCE`: study banner, contrast-by-contrast verdicts, personal positioning against between-study spread   | ✅ implemented                                                                                                       |
-| Position     | `PERCENTILE_STABILITY`: every genus position against the uncorrected and the corrected panel                        | ✅ implemented                                                                                                       |
-| Position     | `TAXON_PERCENTILES`: per-genus CLR percentile of each personal sample against the panel                             | ✅ implemented, against the **whole, uncorrected** panel for now. Matching and correction arrive with Integrate      |
-| Position     | `ALPHA_DIVERSITY`: rarefied Shannon, richness and evenness, with pooled and per-study position                      | ✅ implemented                                                                                                       |
-| Position     | cohort matching, beta position, enterosignatures, lifestyle contrasts                                               | planned                                                                                                              |
-| Deviate      | `DEVIATION_FLAGS`: the extremes-only checks of DECISIONS.md D12, each calibrated on the panel (leave-one-out)       | ✅ implemented, single-arm: the cross-arm agreement rule needs both arms                                             |
-| Gates        | `TECHNICAL_QC`: read retention at every ampliseq step, against the panel                                            | ✅ implemented                                                                                                       |
-| Longitudinal | `WITHIN_PERSON`: changes between your samples against a noise floor borrowed from panel repeat samples; identity    | ✅ implemented                                                                                                       |
-| Report       | `REPORT`: plain-language HTML and PDF; caveats first, a confidence label per section, a glossary                    | ✅ implemented                                                                                                       |
+| Stage        | Module                                                                                                                | Status                                                                                                               |
+| ------------ | --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Harmonise    | `COLLAPSE_GENUS`: genus collapse from named-rank taxonomy; unassigned reads stay in as an explicit `Unassigned` row   | ✅ implemented                                                                                                       |
+| Harmonise    | phylogenetic placement for the V4-projected arm                                                                       | planned. First test whether ampliseq's own `--run_pplace` accepts a Greengenes2 backbone; if so, no module is needed |
+| Integrate    | `BATCH_DIAGNOSE`: PERMANOVA (vegan `adonis2`) on Aitchison distance, R²(study) and study + variable models            | ✅ implemented (diagnosis only)                                                                                      |
+| Integrate    | `BATCH_CORRECT`: MMUPHin harmonises the panel studies; personal samples are never corrected                           | ✅ implemented                                                                                                       |
+| Gates        | `POSITIVE_CONTROL`: injected signal must survive correction, or the run stops                                         | ✅ implemented                                                                                                       |
+| Gates        | `BATCH_DOMINANCE`: study banner, contrast-by-contrast verdicts, personal positioning against between-study spread     | ✅ implemented                                                                                                       |
+| Position     | `PERCENTILE_STABILITY`: every genus position against the uncorrected and the corrected panel                          | ✅ implemented                                                                                                       |
+| Position     | `TAXON_PERCENTILES`: per-genus CLR percentile of each personal sample against the panel                               | ✅ implemented, against the **whole, uncorrected** panel for now. Matching and correction arrive with Integrate      |
+| Position     | `ALPHA_DIVERSITY`: rarefied Shannon, richness and evenness, with pooled and per-study position                        | ✅ implemented                                                                                                       |
+| Position     | `MATCH_COHORT`: panel people who share your age, sex and BMI bands, widened step by step (D12); never a guessed match | ✅ implemented                                                                                                       |
+| Position     | beta position, enterosignatures, lifestyle contrasts                                                                  | planned                                                                                                              |
+| Deviate      | `DEVIATION_FLAGS`: the extremes-only checks of DECISIONS.md D12, each calibrated on the panel (leave-one-out)         | ✅ implemented, single-arm: the cross-arm agreement rule needs both arms                                             |
+| Gates        | `TECHNICAL_QC`: read retention at every ampliseq step, against the panel                                              | ✅ implemented                                                                                                       |
+| Longitudinal | `WITHIN_PERSON`: changes between your samples against a noise floor borrowed from panel repeat samples; identity      | ✅ implemented                                                                                                       |
+| Report       | `REPORT`: plain-language HTML and PDF; caveats first, a confidence label per section, a glossary                      | ✅ implemented                                                                                                       |
 
 Until the gates exist, a percentile from this pipeline is a position, not a finding.
 

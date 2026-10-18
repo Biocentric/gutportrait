@@ -1,0 +1,124 @@
+{
+    "with a minimum of 10: matched after widening to age bands only, from two studies": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.cohort_ladder.tsv:md5,7e7c4021f9ebeab8330606e8ee2a87f3"
+                ]
+            ],
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.matched_samples.tsv:md5,3baee5d675f81eabfd6608c78abbe90e"
+                ]
+            ],
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.matched_percentiles.tsv:md5,b6de14262ee08ab84f6c63ebd0b7660c"
+                ]
+            ],
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.matched_alpha.tsv:md5,0725f4d64319893d54c7c37e3c3943a5"
+                ]
+            ]
+        ],
+        "timestamp": "2026-10-18T20:43:49.40122769",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.04.3"
+        }
+    },
+    "synthetic fixture: no level reaches 50 people, so there is no matched comparison": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.cohort_ladder.tsv:md5,559efa056c1a9ec414f86dddb0c0d176"
+                ]
+            ],
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.matched_samples.tsv:md5,b27a7deb5758e1692af43454b004e3d6"
+                ]
+            ],
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.matched_percentiles.tsv:md5,1b82e8d33c6ea136906827dcd556f483"
+                ]
+            ],
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.matched_alpha.tsv:md5,5bfa5af6ad759047b72a487bc2a72fe0"
+                ]
+            ],
+            {
+                "versions_numpy": [
+                    [
+                        "MATCH_COHORT",
+                        "numpy",
+                        "1.26.4"
+                    ]
+                ],
+                "versions_pandas": [
+                    [
+                        "MATCH_COHORT",
+                        "pandas",
+                        "2.2.1"
+                    ]
+                ],
+                "versions_python": [
+                    [
+                        "MATCH_COHORT",
+                        "python",
+                        "3.12.3"
+                    ]
+                ]
+            }
+        ],
+        "timestamp": "2026-10-18T20:43:26.795725193",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.04.3"
+        }
+    },
+    "a study that publishes only an age range matches only where every band in it qualifies": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.cohort_ladder.tsv:md5,666c344ece1cd4a0d3357250b6f8df23"
+                ]
+            ]
+        ],
+        "timestamp": "2026-10-18T20:48:18.091559525",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.04.3"
+        }
+    }
+}

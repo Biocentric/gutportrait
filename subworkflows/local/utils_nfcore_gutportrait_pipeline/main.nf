@@ -181,6 +181,13 @@ def validateSamplesheetRows(rows, min_panel_samples) {
         error("Samplesheet: study ${mixed.unique().join(', ')} contains both personal and panel samples. Give the personal samples their own study, so they are never mistaken for a reference batch.")
     }
 
+    // A set of bands ("30s|40s") describes a study's inclusion criteria, never a person
+    // whose bands are known: the personal samples need single values.
+    def ranged = metas.findAll { meta -> meta.role == 'personal' && [meta.age_cat, meta.sex, meta.bmi_cat].any { v -> v && v.toString().contains('|') } }
+    if (ranged) {
+        error("Samplesheet: personal sample(s) ${ranged.collect { meta -> meta.id }.join(', ')} give a set of bands (with '|'). Give your own age, sex and BMI band as single values; sets are for panel studies that publish only inclusion criteria.")
+    }
+
     // A repeat is a second sample of a panel person: it must name that person in `subject`
     // (the subject of a panel row, which defaults to its sample name), in the same study.
     def panel_subjects = metas.findAll { meta -> meta.role == 'panel' }
