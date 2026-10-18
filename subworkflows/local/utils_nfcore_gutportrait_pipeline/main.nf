@@ -194,7 +194,8 @@ def toolCitationText() {
     def taxonomy = params.taxonomy_db == 'silva' ? " and classified against SILVA (Quast et al. 2013)" : ""
     def citation_text = [
             "Amplicon sequence variants were inferred upstream with nf-core/ampliseq (Straub et al. 2020) using DADA2 (Callahan et al. 2016)${taxonomy}.",
-            "Genus tables and centred-log-ratio percentiles were computed with pandas (McKinney 2010) and NumPy (Harris et al. 2020), treating the data as compositional (Gloor et al. 2017).",
+            "Genus tables, centred-log-ratio percentiles, rarefied alpha diversity and deviation flags were computed with pandas (McKinney 2010) and NumPy (Harris et al. 2020), treating the data as compositional (Gloor et al. 2017).",
+            "Between-study variance was partitioned by PERMANOVA (Anderson 2001) on Aitchison distance with vegan (Oksanen et al.).",
             "Results were summarised with MultiQC (Ewels et al. 2016)."
         ].join(' ').trim()
 
@@ -209,6 +210,8 @@ def toolBibliographyText() {
             '<li>McKinney, W. (2010). Data structures for statistical computing in Python. Proceedings of the 9th Python in Science Conference, 56–61. doi: <a href="https://doi.org/10.25080/Majora-92bf1922-00a">10.25080/Majora-92bf1922-00a</a></li>',
             '<li>Harris, C. R., Millman, K. J., van der Walt, S. J., et al. (2020). Array programming with NumPy. Nature, 585(7825), 357–362. doi: <a href="https://doi.org/10.1038/s41586-020-2649-2">10.1038/s41586-020-2649-2</a></li>',
             '<li>Gloor, G. B., Macklaim, J. M., Pawlowsky-Glahn, V., & Egozcue, J. J. (2017). Microbiome datasets are compositional: and this is not optional. Frontiers in Microbiology, 8, 2224. doi: <a href="https://doi.org/10.3389/fmicb.2017.02224">10.3389/fmicb.2017.02224</a></li>',
+            '<li>Anderson, M. J. (2001). A new method for non-parametric multivariate analysis of variance. Austral Ecology, 26(1), 32–46. doi: <a href="https://doi.org/10.1111/j.1442-9993.2001.01070.pp.x">10.1111/j.1442-9993.2001.01070.pp.x</a></li>',
+            '<li>Oksanen, J., Simpson, G. L., Blanchet, F. G., et al. vegan: Community Ecology Package. R package version 2.7-5. <a href="https://CRAN.R-project.org/package=vegan">https://CRAN.R-project.org/package=vegan</a></li>',
             '<li>Ewels, P., Magnusson, M., Lundin, S., & Käller, M. (2016). MultiQC: summarize analysis results for multiple tools and samples in a single report. Bioinformatics, 32(19), 3047–3048. doi: <a href="https://doi.org/10.1093/bioinformatics/btw354">10.1093/bioinformatics/btw354</a></li>'
         ].join(' ').trim()
 

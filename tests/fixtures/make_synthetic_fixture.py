@@ -172,10 +172,13 @@ def main():
             fh.write('\t'.join([a['id'], 'Bacteria', ph, cl, od, fa, a['genus'], '',
                                 '1.0' if a['genus'] else '0.9', a['seq']]) + '\n')
 
+    # `context` is added at write time only, so the random draws above, and therefore the
+    # ASV table, are unchanged by it.
     with open(os.path.join(OUT, 'samplesheet.csv'), 'w', newline='\n') as fh:
         w = csv.writer(fh, lineterminator='\n')
-        w.writerow(['sample', 'role', 'study', 'run', 'age_cat', 'sex', 'bmi_cat', 'country'])
-        w.writerows(samples)
+        w.writerow(['sample', 'role', 'study', 'run', 'age_cat', 'sex', 'bmi_cat', 'country', 'context'])
+        for s in samples:
+            w.writerow(list(s) + ['synthetic timepoint %s' % s[0][-1] if s[1] == 'personal' else ''])
 
     print('wrote %d ASVs x %d samples to %s' % (len(asvs), len(samples), OUT))
 

@@ -1,0 +1,84 @@
+name: "batch_diagnose"
+description: "Variance partition of the reference panel: how much is study, how much is each metadata variable (vegan adonis2 on Aitchison distance)"
+keywords:
+  - microbiome
+  - batch effect
+  - permanova
+  - adonis2
+  - aitchison
+tools:
+  - "vegan":
+      description: "Community Ecology Package: ordination, diversity and dissimilarity methods, including PERMANOVA (adonis2)"
+      homepage: "https://vegandevs.github.io/vegan/"
+      documentation: "https://cran.r-project.org/package=vegan"
+      licence: ["GPL-2.0-only"]
+      identifier: "biotools:vegan"
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map with run information, e.g. `[ id:'native' ]`
+    - genus_counts:
+        type: file
+        description: Genus-by-sample counts for all samples, from COLLAPSE_GENUS
+        pattern: "*.genus_counts.tsv"
+  - samplesheet:
+      type: file
+      description: The validated pipeline samplesheet; only panel samples enter the models
+      pattern: "*.csv"
+
+output:
+  permanova:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.permanova.tsv":
+          type: file
+          description: PERMANOVA results on Aitchison distance - the study model, and study + variable models with marginal R2 per term, or a note when a model is not testable or confounded
+          pattern: "*.permanova.tsv"
+  summary:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.batch_summary.tsv":
+          type: file
+          description: R2(study), whether it exceeds the banner threshold, and every setting used
+          pattern: "*.batch_summary.tsv"
+  versions_r_base:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "r-base":
+          type: string
+          description: The name of the tool
+      - 'Rscript -e "cat(paste(R.version[c(''major'', ''minor'')], collapse = ''.''))"':
+          type: eval
+          description: The expression to obtain the version of the tool
+  versions_vegan:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "vegan":
+          type: string
+          description: The name of the tool
+      - 'Rscript -e "cat(as.character(packageVersion(''vegan'')))"':
+          type: eval
+          description: The expression to obtain the version of the tool
+
+topics:
+  versions:
+    - - process:
+          type: string
+          description: The process the versions were collected from
+      - tool:
+          type: string
+          description: The tool name the version was collected for
+      - version:
+          type: string
+          description: The version of the tool
+
+authors:
+  - "@Biocentric"
+maintainers:
+  - "@Biocentric"

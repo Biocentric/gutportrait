@@ -37,11 +37,19 @@ full list for the version you ran.
 
   > Harris CR, Millman KJ, van der Walt SJ, et al. Array programming with NumPy. Nature. 2020 Sep;585(7825):357-362. doi: 10.1038/s41586-020-2649-2. PubMed PMID: 32939066; PubMed Central PMCID: PMC7759461.
 
+- [vegan](https://CRAN.R-project.org/package=vegan)
+
+  > Oksanen J, Simpson GL, Blanchet FG, et al. vegan: Community Ecology Package. R package version 2.7-5. https://CRAN.R-project.org/package=vegan
+
 - [MultiQC](https://pubmed.ncbi.nlm.nih.gov/27312411/)
 
 > Ewels P, Magnusson M, Lundin S, Käller M. MultiQC: summarize analysis results for multiple tools and samples in a single report. Bioinformatics. 2016 Oct 1;32(19):3047-8. doi: 10.1093/bioinformatics/btw354. Epub 2016 Jun 16. PubMed PMID: 27312411; PubMed Central PMCID: PMC5039924.
 
 ## Methods
+
+- [PERMANOVA](https://doi.org/10.1111/j.1442-9993.2001.01070.pp.x)
+
+  > Anderson MJ. A new method for non-parametric multivariate analysis of variance. Austral Ecology. 2001;26(1):32-46. doi: 10.1111/j.1442-9993.2001.01070.pp.x.
 
 - [Compositional data analysis of microbiome data](https://pubmed.ncbi.nlm.nih.gov/29187837/)
 

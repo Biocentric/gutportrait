@@ -93,6 +93,96 @@
                     "exclusiveMinimum": 0,
                     "description": "Additive pseudocount applied before the centred-log-ratio transform.",
                     "fa_icon": "fas fa-plus"
+                },
+                "min_study_n": {
+                    "type": "integer",
+                    "default": 10,
+                    "minimum": 2,
+                    "description": "Panel studies with fewer samples are left out of per-study bounds and PERMANOVA models.",
+                    "fa_icon": "fas fa-layer-group"
+                },
+                "seed": {
+                    "type": "integer",
+                    "default": 20261018,
+                    "description": "Random seed for rarefaction and permutation tests, so every run is reproducible.",
+                    "fa_icon": "fas fa-seedling"
+                },
+                "rarefaction_depth": {
+                    "type": "integer",
+                    "default": 5000,
+                    "minimum": 100,
+                    "description": "Reads per sample for alpha diversity. Samples below it get no alpha diversity and are listed.",
+                    "help_text": "Observed richness grows with depth, so every sample is subsampled to the same depth before alpha diversity is computed.",
+                    "fa_icon": "fas fa-compress-alt"
+                },
+                "rarefaction_iterations": {
+                    "type": "integer",
+                    "default": 20,
+                    "minimum": 1,
+                    "description": "Rarefaction repeats averaged per sample.",
+                    "fa_icon": "fas fa-redo"
+                },
+                "permutations": {
+                    "type": "integer",
+                    "default": 999,
+                    "minimum": 99,
+                    "description": "Permutations for the PERMANOVA tests.",
+                    "fa_icon": "fas fa-random"
+                },
+                "banner_r2_study": {
+                    "type": "number",
+                    "default": 0.1,
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "If study explains more than this share of panel variance (R2), every population claim is flagged orientation only.",
+                    "fa_icon": "fas fa-flag"
+                }
+            }
+        },
+        "deviation_options": {
+            "title": "Deviation flag options",
+            "type": "object",
+            "fa_icon": "fas fa-exclamation-triangle",
+            "description": "Thresholds for the extremes-only deviation flags (DECISIONS.md D12). Strict by default.",
+            "properties": {
+                "flag_low_percentile": {
+                    "type": "number",
+                    "default": 5,
+                    "minimum": 0,
+                    "maximum": 50,
+                    "description": "A low value must fall below this percentile of the pooled panel and of every panel study.",
+                    "fa_icon": "fas fa-arrow-down"
+                },
+                "flag_high_percentile": {
+                    "type": "number",
+                    "default": 95,
+                    "minimum": 50,
+                    "maximum": 100,
+                    "description": "A high value must exceed this percentile of the pooled panel and of every panel study.",
+                    "fa_icon": "fas fa-arrow-up"
+                },
+                "dominance_threshold": {
+                    "type": "number",
+                    "default": 0.5,
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Flag a single genus above this fraction of the sample.",
+                    "fa_icon": "fas fa-crown"
+                },
+                "core_prevalence": {
+                    "type": "number",
+                    "default": 0.95,
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Genera present in at least this fraction of the panel count as core.",
+                    "fa_icon": "fas fa-circle"
+                },
+                "core_min_expected": {
+                    "type": "number",
+                    "default": 10,
+                    "minimum": 0,
+                    "description": "A missing core genus is flagged only if the panel median predicts at least this many reads at the sample's depth.",
+                    "fa_icon": "fas fa-search"
                 }
             }
         },
@@ -253,6 +343,9 @@
         },
         {
             "$ref": "#/$defs/analysis_options"
+        },
+        {
+            "$ref": "#/$defs/deviation_options"
         },
         {
             "$ref": "#/$defs/institutional_config_options"

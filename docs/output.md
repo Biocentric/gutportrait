@@ -8,9 +8,10 @@ top-level results directory (`--outdir`). File names start with the comparison a
 directory.
 
 > [!IMPORTANT]
-> The integration stage and its gates are not built yet. Until they are, every number
-> below is computed against the **whole, uncorrected** panel. Read it as a position, not
-> a finding.
+> Batch correction and the two gates are not built yet. The batch diagnosis below measures
+> how much of the panel's variation is study, but nothing is corrected for it. Until the
+> gates exist, every number is computed against the **whole, uncorrected** panel. Read it
+> as a position, not a finding.
 
 ## Pipeline overview
 
@@ -18,6 +19,9 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 
 - [Genus tables](#genus-tables) - ASV counts collapsed to genus, with unassigned reads accounted for
 - [Taxon percentiles](#taxon-percentiles) - where each personal sample sits in the panel, per genus, in CLR space
+- [Batch diagnosis](#batch-diagnosis) - how much of the panel's variation is study, and how much each metadata variable
+- [Alpha diversity](#alpha-diversity) - diversity at one fixed depth, and where each personal sample sits
+- [Deviation flags](#deviation-flags) - extremes-only checks for each personal sample
 - [MultiQC](#multiqc) - software versions, parameters and the methods text
 - [Pipeline information](#pipeline-information) - Report metrics generated during the workflow execution
 
@@ -67,6 +71,7 @@ The calculation:
 | ------------------ | --------------------------------------------------------------------------------------------------------- |
 | `genus`            | genus, or `Unassigned`                                                                                    |
 | `sample`           | the personal sample                                                                                       |
+| `context`          | the sample's `context` from the samplesheet, if given                                                     |
 | `clr`              | its centred-log-ratio value for this genus                                                                |
 | `percentile`       | the share of panel samples (%) at or below that value                                                     |
 | `panel_median_clr` | the panel median, for scale                                                                               |
@@ -85,8 +90,91 @@ How to read it:
   is a step of about 2.8 points, and 100 means "above every panel sample", not "extreme
   on some absolute scale".
 - With dozens of genera per sample, some sit at the edges by chance alone. A single high or
-  low percentile is not a deviation. The deviation flags (planned) apply stricter,
+  low percentile is not a deviation. The [deviation flags](#deviation-flags) apply stricter,
   pre-registered criteria.
+
+### Batch diagnosis
+
+<details markdown="1">
+<summary>Output files</summary>
+
+- `batch/`
+  - `<arm>.permanova.tsv`: one row per model term: `model`, `term`, `df`, `R2`, `F`, `p`,
+    `n`, and a `note` when a model was not testable or is confounded.
+  - `<arm>.batch_summary.tsv`: `r2_study`, whether it exceeds `--banner_r2_study`
+    (`study_banner`), and every setting used.
+
+</details>
+
+PERMANOVA (vegan `adonis2`) on Aitchison distance, the Euclidean distance between CLR
+profiles, computed on **panel** samples only with the same genus filter and pseudocount
+as the percentiles. Models:
+
+- `study`: R2(study), how much of the panel's variation is between studies. Above
+  `--banner_r2_study` (default 0.10), every population-facing claim is orientation only.
+- `study + <variable>` for each metadata column with at least two levels: marginal R2 for
+  both terms. A variable explains more than study only if its R2 is the larger one, which
+  is the batch-dominance rule of DECISIONS.md D12. If every sample with that variable comes
+  from one study, the two cannot be separated; the model is fitted without study and the
+  `note` says `confounded`.
+
+With a single panel study, R2(study) cannot be estimated and is reported as missing.
+
+### Alpha diversity
+
+<details markdown="1">
+<summary>Output files</summary>
+
+- `alpha/`
+  - `<arm>.alpha_diversity.tsv`: per sample: `reads`, `rarefied`, `shannon`, `observed`
+    (ASVs) and `pielou`. Samples below `--rarefaction_depth` keep a row with empty metrics.
+  - `<arm>.alpha_position.tsv`: per personal sample and metric: `panel_percentile`,
+    `panel_median`, the range of study medians, and whether the value lies below the low
+    (or above the high) percentile of **every** panel study.
+  - `<arm>.alpha_params.tsv`: depth, iterations, seed and sample counts.
+
+</details>
+
+Every sample is subsampled to the same depth (`--rarefaction_depth`, default 5,000 reads),
+`--rarefaction_iterations` times with fixed seeds, and the metrics are averaged. Without a
+common depth, observed richness would rank samples by how deeply they were sequenced.
+Panel studies with fewer than `--min_study_n` samples are left out of the per-study bounds.
+
+### Deviation flags
+
+<details markdown="1">
+<summary>Output files</summary>
+
+- `flags/`
+  - `<arm>.deviation_flags.tsv`: every check for every personal sample, raised or not, with
+    `value`, `threshold`, `detail`, `arm` and `agreement`.
+
+</details>
+
+| Flag                         | Raised when                                                                                                            |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `low_alpha`                  | Shannon below the low percentile of the pooled panel **and** of every panel study                                      |
+| `single_taxon_dominance`     | one assigned genus above `--dominance_threshold` (default 50%) of the sample                                           |
+| `enterobacteriaceae_bloom`   | family _Enterobacteriaceae_ above the high percentile of the pooled panel and of every study                           |
+| `proteobacteria_bloom`       | phylum _Proteobacteria_ (SILVA) or _Pseudomonadota_ (GTDB), same rule                                                  |
+| `faecalibacterium_depletion` | genus _Faecalibacterium_ below the low percentile, same rule                                                           |
+| `core_genus_missing`         | a genus in ≥ `--core_prevalence` of the panel has no reads, although the panel median predicts ≥ `--core_min_expected` |
+| `beta_outlier`               | Aitchison distance to the panel centroid above the high percentile of the panel's own distances                        |
+
+How to read it:
+
+- Every check is reported, so "nothing raised" is a visible result, and the strongest
+  negative result 16S can give. It is not a certificate of health.
+- Abundance checks use relative abundance, so a flag reads as "31% against a panel 95th
+  percentile of 2.6%". The distance check uses CLR.
+- Requiring a value to be extreme against **every** study, not just the pooled panel, is
+  the between-study-spread rule: a value is unusual only if no single reference study would
+  call it ordinary.
+- A flag from one arm is provisional. The design requires the native and V4-projected arms
+  to agree before a flag reaches the report, and the `agreement` column says which.
+- Read each flag next to its sample's `context`. A flag that appears only in a sample taken
+  just after an unusual event, such as travel or an illness, is a candidate for that event, not evidence
+  about the usual state.
 
 ### MultiQC
 

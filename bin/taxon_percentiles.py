@@ -108,9 +108,13 @@ def clr(counts, pseudocount):
 def main(argv=None):
     a = parse_args(argv)
 
+    context = {}
     if a.counts:
         counts = pd.read_csv(a.counts, sep='\t', index_col=0)
         personal, panel = split_by_role(counts, a.samplesheet)
+        sheet = pd.read_csv(a.samplesheet, dtype=str).fillna('')
+        if 'context' in sheet.columns:
+            context = dict(zip(sheet['sample'], sheet['context']))
     else:
         personal = pd.read_csv(a.personal, sep='\t', index_col=0)
         panel = pd.read_csv(a.panel, sep='\t', index_col=0)
@@ -147,6 +151,7 @@ def main(argv=None):
             rows.append({
                 'genus': genus,
                 'sample': sample,
+                'context': context.get(sample, ''),
                 'clr': round(float(val), 4),
                 'percentile': round(float(pct), 1),
                 'panel_median_clr': round(float(np.median(ref)), 4),

@@ -1,0 +1,102 @@
+name: "alpha_diversity"
+description: "Rarefied alpha diversity per sample, and where each personal sample sits against the panel and every panel study"
+keywords:
+  - microbiome
+  - 16S
+  - alpha diversity
+  - rarefaction
+  - shannon
+tools:
+  - "pandas":
+      description: "Powerful data structures for data analysis in Python"
+      homepage: "https://pandas.pydata.org"
+      documentation: "https://pandas.pydata.org/docs/"
+      licence: ["BSD-3-Clause"]
+      identifier: ""
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map with run information, e.g. `[ id:'native' ]`
+    - asv_table:
+        type: file
+        description: ampliseq `dada2/ASV_table.tsv` with every sample of the run
+        pattern: "*.tsv"
+  - samplesheet:
+      type: file
+      description: The validated pipeline samplesheet (sample, role, study, optional context)
+      pattern: "*.csv"
+
+output:
+  alpha:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.alpha_diversity.tsv":
+          type: file
+          description: Per-sample rarefied Shannon, observed ASVs and Pielou evenness, with read depth; samples below the depth are kept with empty metrics
+          pattern: "*.alpha_diversity.tsv"
+  position:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.alpha_position.tsv":
+          type: file
+          description: For each personal sample and metric - pooled-panel percentile, panel median, the range of study medians, and whether the value lies beyond every study's low or high percentile
+          pattern: "*.alpha_position.tsv"
+  params:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.alpha_params.tsv":
+          type: file
+          description: Rarefaction depth, iterations, seed and sample counts used
+          pattern: "*.alpha_params.tsv"
+  versions_python:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "python":
+          type: string
+          description: The name of the tool
+      - 'python3 --version | sed "s/Python //"':
+          type: eval
+          description: The expression to obtain the version of the tool
+  versions_pandas:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "pandas":
+          type: string
+          description: The name of the tool
+      - 'python3 -c "import pandas; print(pandas.__version__)"':
+          type: eval
+          description: The expression to obtain the version of the tool
+  versions_numpy:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "numpy":
+          type: string
+          description: The name of the tool
+      - 'python3 -c "import numpy; print(numpy.__version__)"':
+          type: eval
+          description: The expression to obtain the version of the tool
+
+topics:
+  versions:
+    - - process:
+          type: string
+          description: The process the versions were collected from
+      - tool:
+          type: string
+          description: The tool name the version was collected for
+      - version:
+          type: string
+          description: The version of the tool
+
+authors:
+  - "@Biocentric"
+maintainers:
+  - "@Biocentric"

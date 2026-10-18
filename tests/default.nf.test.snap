@@ -2,7 +2,21 @@
     "-profile test": {
         "content": [
             {
+                "ALPHA_DIVERSITY": {
+                    "numpy": "1.26.4",
+                    "pandas": "2.2.1",
+                    "python": "3.12.3"
+                },
+                "BATCH_DIAGNOSE": {
+                    "r-base": "4.5.3",
+                    "vegan": "2.7.5"
+                },
                 "COLLAPSE_GENUS": {
+                    "pandas": "2.2.1",
+                    "python": "3.12.3"
+                },
+                "DEVIATION_FLAGS": {
+                    "numpy": "1.26.4",
                     "pandas": "2.2.1",
                     "python": "3.12.3"
                 },
@@ -16,6 +30,15 @@
                 }
             },
             [
+                "alpha",
+                "alpha/native.alpha_diversity.tsv",
+                "alpha/native.alpha_params.tsv",
+                "alpha/native.alpha_position.tsv",
+                "batch",
+                "batch/native.batch_summary.tsv",
+                "batch/native.permanova.tsv",
+                "flags",
+                "flags/native.deviation_flags.tsv",
                 "genus",
                 "genus/native.collapse_stats.tsv",
                 "genus/native.genus_counts.tsv",
@@ -36,14 +59,20 @@
                 "pipeline_info/gutportrait_software_mqc_versions.yml"
             ],
             [
+                "native.alpha_diversity.tsv:md5,95158f3e9ebca61dbdbe31eed4528ef3",
+                "native.alpha_params.tsv:md5,3df7941e7bebf4eb058b31ee05040181",
+                "native.alpha_position.tsv:md5,d78579ae21a9d7430e7347c73ff24d9c",
+                "native.batch_summary.tsv:md5,7f506d0aab5dfe3080d29b35f66d71ee",
+                "native.permanova.tsv:md5,169b1f24f3eefaadd85f08a9d0d0754d",
+                "native.deviation_flags.tsv:md5,15197b00c610c02d74761064815590f2",
                 "native.collapse_stats.tsv:md5,f658390a79a8dd5181130ebc4b90b961",
                 "native.genus_counts.tsv:md5,9ef003305a6d10070b9a2c58aa0c56fd",
                 "multiqc_citations.txt:md5,4c806e63a283ec1b7e78cdae3a923d4f",
                 "native.percentile_params.tsv:md5,2dc2fb756866a94001fe5d3baab354c0",
-                "native.taxon_percentiles.tsv:md5,21ba91c8654ee14be1c1c76a2d8245b4"
+                "native.taxon_percentiles.tsv:md5,3640c099a0cae2856e5f428da8eb35da"
             ]
         ],
-        "timestamp": "2026-10-15T16:52:42.920083731",
+        "timestamp": "2026-10-18T13:41:18.296137566",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.04.3"

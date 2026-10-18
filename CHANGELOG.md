@@ -25,11 +25,24 @@ Initial release of Biocentric/gutportrait, created with the [nf-core](https://nf
   missing metadata), generated deterministically by
   `tests/fixtures/make_synthetic_fixture.py`, and used by `-profile test`.
 - Tool citations in the MultiQC methods description.
+- `BATCH_DIAGNOSE`: PERMANOVA (vegan `adonis2`) on Aitchison distance for the panel:
+  R²(study) with an orientation-only banner above `--banner_r2_study`, and study +
+  variable models with marginal R² per term (the batch-dominance rule of D12).
+- `ALPHA_DIVERSITY`: Shannon, observed ASVs and Pielou evenness at a fixed rarefaction
+  depth (`--rarefaction_depth`, `--rarefaction_iterations`, `--seed`), with each personal
+  sample's position in the pooled panel and against every panel study.
+- `DEVIATION_FLAGS`: the extremes-only checks of D12 (low alpha, single-taxon dominance,
+  Enterobacteriaceae and Proteobacteria blooms, Faecalibacterium depletion, missing core
+  genera, beta outlier), each reported raised or not, with value and threshold. All
+  thresholds are parameters.
+- Optional samplesheet column `context`, carried into every personal-sample table.
 
 ### `Fixed`
 
 - `bin/` scripts are now committed executable.
 
 ### `Dependencies`
+
+- `r-vegan` 2.7.5 (R 4.5.3) for `BATCH_DIAGNOSE`.
 
 ### `Deprecated`

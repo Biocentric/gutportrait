@@ -53,6 +53,12 @@
                 "type": "string",
                 "errorMessage": "country is free text and may be left empty",
                 "meta": ["country"]
+            },
+            "context": {
+                "type": "string",
+                "description": "Optional free-text sampling context for personal samples, e.g. \"baseline\" or \"after a diet change\". Carried into the percentile, alpha and flag tables.",
+                "errorMessage": "context is free text and may be left empty",
+                "meta": ["context"]
             }
         },
         "required": ["sample", "role", "study", "run"]

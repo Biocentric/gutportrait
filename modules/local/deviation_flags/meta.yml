@@ -1,0 +1,94 @@
+name: "deviation_flags"
+description: "Extremes-only deviation flags for each personal sample, measured against the panel and its between-study spread"
+keywords:
+  - microbiome
+  - 16S
+  - deviation
+  - dysbiosis
+  - flags
+tools:
+  - "pandas":
+      description: "Powerful data structures for data analysis in Python"
+      homepage: "https://pandas.pydata.org"
+      documentation: "https://pandas.pydata.org/docs/"
+      licence: ["BSD-3-Clause"]
+      identifier: ""
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map with run information, e.g. `[ id:'native' ]`
+    - asv_table:
+        type: file
+        description: ampliseq `dada2/ASV_table.tsv`
+        pattern: "*.tsv"
+    - taxonomy:
+        type: file
+        description: Named-rank taxonomy `dada2/ASV_tax_species.<db>.tsv` (Phylum, Family and Genus columns)
+        pattern: "*.tsv"
+    - alpha:
+        type: file
+        description: Per-sample alpha diversity from ALPHA_DIVERSITY
+        pattern: "*.alpha_diversity.tsv"
+  - samplesheet:
+      type: file
+      description: The validated pipeline samplesheet
+      pattern: "*.csv"
+
+output:
+  flags:
+    - - meta:
+          type: map
+          description: Groovy Map with run information
+      - "*.deviation_flags.tsv":
+          type: file
+          description: Every check for every personal sample, raised or not - value, threshold, detail, arm and the cross-arm agreement status
+          pattern: "*.deviation_flags.tsv"
+  versions_python:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "python":
+          type: string
+          description: The name of the tool
+      - 'python3 --version | sed "s/Python //"':
+          type: eval
+          description: The expression to obtain the version of the tool
+  versions_pandas:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "pandas":
+          type: string
+          description: The name of the tool
+      - 'python3 -c "import pandas; print(pandas.__version__)"':
+          type: eval
+          description: The expression to obtain the version of the tool
+  versions_numpy:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "numpy":
+          type: string
+          description: The name of the tool
+      - 'python3 -c "import numpy; print(numpy.__version__)"':
+          type: eval
+          description: The expression to obtain the version of the tool
+
+topics:
+  versions:
+    - - process:
+          type: string
+          description: The process the versions were collected from
+      - tool:
+          type: string
+          description: The tool name the version was collected for
+      - version:
+          type: string
+          description: The version of the tool
+
+authors:
+  - "@Biocentric"
+maintainers:
+  - "@Biocentric"

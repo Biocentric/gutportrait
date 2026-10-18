@@ -41,6 +41,7 @@ cohort_S0001,panel,COHORT_X,RUN_D,30s,male,Overweight,Germany
 | `sex`     | no       | `male`, `female` or `other`.                                                                                                                                                                                                  |
 | `bmi_cat` | no       | `Underweight`, `Normal`, `Overweight` or `Obese`.                                                                                                                                                                             |
 | `country` | no       | Free text.                                                                                                                                                                                                                    |
+| `context` | no       | Free text, for personal samples: when or why the sample was taken, e.g. `baseline` or `after a diet change`. It is carried into the percentile, alpha and flag tables, so every number can be read next to it.                |
 
 Leave optional cells empty where a value is unknown. For public ENA panels that is the
 normal case: they publish study-level inclusion criteria, not per-sample metadata. The
@@ -93,14 +94,30 @@ results directory.
 
 ## Analysis options
 
-| Parameter             | Default | Meaning                                                                                                                                                                  |
-| --------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--min_panel_samples` | `20`    | Refuse to run with fewer panel samples than this.                                                                                                                        |
-| `--min_prevalence`    | `0.1`   | Keep genera present in at least this fraction of **panel** samples. The filter never looks at personal samples: selecting features for being present in you is circular. |
-| `--pseudocount`       | `0.5`   | Added to every count before the centred-log-ratio transform.                                                                                                             |
+| Parameter                  | Default    | Meaning                                                                                                                                                                  |
+| -------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--min_panel_samples`      | `20`       | Refuse to run with fewer panel samples than this.                                                                                                                        |
+| `--min_prevalence`         | `0.1`      | Keep genera present in at least this fraction of **panel** samples. The filter never looks at personal samples: selecting features for being present in you is circular. |
+| `--pseudocount`            | `0.5`      | Added to every count before the centred-log-ratio transform.                                                                                                             |
+| `--min_study_n`            | `10`       | Panel studies smaller than this are left out of per-study bounds and PERMANOVA models.                                                                                   |
+| `--rarefaction_depth`      | `5000`     | Reads per sample for alpha diversity; samples below it are listed and get no alpha diversity.                                                                            |
+| `--rarefaction_iterations` | `20`       | Rarefaction repeats averaged per sample.                                                                                                                                 |
+| `--permutations`           | `999`      | Permutations for the PERMANOVA tests.                                                                                                                                    |
+| `--banner_r2_study`        | `0.1`      | If study explains more of the panel's variance than this, every population claim is orientation only.                                                                    |
+| `--seed`                   | `20261018` | Seed for rarefaction and permutations, so every run is reproducible.                                                                                                     |
+
+Deviation flags (DECISIONS.md D12):
+
+| Parameter                | Default | Meaning                                                                                                           |
+| ------------------------ | ------- | ----------------------------------------------------------------------------------------------------------------- |
+| `--flag_low_percentile`  | `5`     | A low value must fall below this percentile of the pooled panel and of every panel study.                         |
+| `--flag_high_percentile` | `95`    | A high value must exceed this percentile of the pooled panel and of every panel study.                            |
+| `--dominance_threshold`  | `0.5`   | Flag one genus above this fraction of the sample.                                                                 |
+| `--core_prevalence`      | `0.95`  | Genera present in at least this fraction of the panel count as core.                                              |
+| `--core_min_expected`    | `10`    | A missing core genus is flagged only if the panel median predicts at least this many reads at the sample's depth. |
 
 The defaults are deliberately strict. The values used are written next to the results, in
-`percentiles/<arm>.percentile_params.tsv`.
+the `*_params.tsv` and `*.batch_summary.tsv` files.
 
 ## Test profile
 
@@ -113,12 +130,13 @@ nextflow run Biocentric/gutportrait -profile test,docker --outdir results_test
 personal samples, laid out exactly like an ampliseq 2.18.0 results directory. Known
 signals are planted in it, so that every stage has an answer to recover:
 
-| Planted signal                                                                          | Recovered by                                                                 |
-| --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Personal sample `self_P3` carries an _Escherichia-Shigella_ bloom (about 31% of reads)  | `TAXON_PERCENTILES`: CLR far above the panel median, at the 100th percentile |
-| Older age bands have a more even composition, so Shannon diversity rises with `age_cat` | the real-effect positive control (planned)                                   |
-| Study C carries _Bacteroides_ ×3, _Bifidobacterium_ ×2 and _Segatella_ ×0.3             | the batch-dominance gate (planned)                                           |
-| Study C has no per-sample metadata, like the ENA panels                                 | cohort matching, which must fall back to "unmatched" for it (planned)        |
+| Planted signal                                                                          | Recovered by                                                                                                                                                                  |
+| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Personal sample `self_P3` carries an _Escherichia-Shigella_ bloom (about 31% of reads)  | `TAXON_PERCENTILES` (100th percentile) and `DEVIATION_FLAGS` (Enterobacteriaceae and Proteobacteria blooms, beta outlier, all raised; nothing raised for `self_P1`/`self_P2`) |
+| Older age bands have a more even composition, so Shannon diversity rises with `age_cat` | `ALPHA_DIVERSITY` (mean Shannon 3.68 in the 20s rising to 4.04 in the 60s) and `BATCH_DIAGNOSE` (age R² 0.37, p = 0.001); the real-effect positive control is planned         |
+| Study C carries _Bacteroides_ ×3, _Bifidobacterium_ ×2 and _Segatella_ ×0.3             | `BATCH_DIAGNOSE`: R²(study) 0.34, p = 0.001, so the orientation-only banner is raised; between the unbiased studies A and B, R² 0.02                                          |
+| Study C has no per-sample metadata, like the ENA panels                                 | `BATCH_DIAGNOSE` tests the metadata variables on studies A and B only; cohort matching (planned) must fall back to "unmatched" for C                                          |
+| Personal samples carry a `context` label                                                | every personal-sample table carries it through                                                                                                                                |
 
 The fixture is invented, including the personal samples and their metadata.
 `python tests/fixtures/make_synthetic_fixture.py` regenerates it byte-identically.

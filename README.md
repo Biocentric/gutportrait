@@ -15,12 +15,13 @@ It is a downstream companion to [`nf-core/ampliseq`](https://nf-co.re/ampliseq),
 replacement for it. **ampliseq turns reads into ASVs. gutportrait turns ASVs into a
 defensible comparison.** The two run side by side, and this README explains exactly how.
 
-> **Status: early development — first slice working.** The upstream half is validated
+> **Status: early development — second slice working.** The upstream half is validated
 > end-to-end on real data (see [Validation](#validation)). Of gutportrait itself, genus
-> collapse and per-genus CLR percentiles are implemented and pass the test profile; the
-> integration, the gates, cohort matching, deviation flags and the report are not built
-> yet (see [Implementation status](#implementation-status)). Nothing here is medical
-> advice and nothing it produces is diagnostic.
+> collapse, per-genus CLR percentiles, alpha diversity, batch diagnosis (PERMANOVA) and the
+> deviation flags are implemented and pass the test profile. Batch correction, the gates,
+> cohort matching and the report are not built yet (see
+> [Implementation status](#implementation-status)). Nothing here is medical advice and
+> nothing it produces is diagnostic.
 
 ---
 
@@ -235,11 +236,13 @@ parameter with a strict default, and the report states the values it used.
 | ------------ | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | Harmonise    | `COLLAPSE_GENUS`: genus collapse from named-rank taxonomy; unassigned reads stay in as an explicit `Unassigned` row | ✅ implemented                                                                                                       |
 | Harmonise    | phylogenetic placement for the V4-projected arm                                                                     | planned. First test whether ampliseq's own `--run_pplace` accepts a Greengenes2 backbone; if so, no module is needed |
-| Integrate    | `BATCH_DIAGNOSE` (PERMANOVA variance partition), `BATCH_CORRECT` (MMUPHin)                                          | planned                                                                                                              |
-| Gates        | `POSITIVE_CONTROL`, `BATCH_DOMINANCE`                                                                               | planned                                                                                                              |
+| Integrate    | `BATCH_DIAGNOSE`: PERMANOVA (vegan `adonis2`) on Aitchison distance, R²(study) and study + variable models          | ✅ implemented (diagnosis only)                                                                                      |
+| Integrate    | `BATCH_CORRECT` (MMUPHin)                                                                                           | planned                                                                                                              |
+| Gates        | `POSITIVE_CONTROL`, `BATCH_DOMINANCE`                                                                               | planned. `BATCH_DIAGNOSE` already computes the R² values the dominance rule needs                                    |
 | Position     | `TAXON_PERCENTILES`: per-genus CLR percentile of each personal sample against the panel                             | ✅ implemented, against the **whole, uncorrected** panel for now. Matching and correction arrive with Integrate      |
-| Position     | cohort matching, alpha/beta position, enterosignatures, lifestyle contrasts                                         | planned                                                                                                              |
-| Deviate      | `DEVIATION_FLAGS`                                                                                                   | planned                                                                                                              |
+| Position     | `ALPHA_DIVERSITY`: rarefied Shannon, richness and evenness, with pooled and per-study position                      | ✅ implemented                                                                                                       |
+| Position     | cohort matching, beta position, enterosignatures, lifestyle contrasts                                               | planned                                                                                                              |
+| Deviate      | `DEVIATION_FLAGS`: the seven extremes-only checks of DECISIONS.md D12, against the between-study spread             | ✅ implemented, single-arm: the cross-arm agreement rule needs both arms                                             |
 | Longitudinal | within-person noise floor, behind `--longitudinal`                                                                  | planned                                                                                                              |
 | Report       | English, HTML and PDF                                                                                               | planned                                                                                                              |
 

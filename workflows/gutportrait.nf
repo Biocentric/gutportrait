@@ -5,6 +5,9 @@
 */
 include { COLLAPSE_GENUS         } from '../modules/local/collapse_genus/main'
 include { TAXON_PERCENTILES      } from '../modules/local/taxon_percentiles/main'
+include { ALPHA_DIVERSITY        } from '../modules/local/alpha_diversity/main'
+include { BATCH_DIAGNOSE         } from '../modules/local/batch_diagnose/main'
+include { DEVIATION_FLAGS        } from '../modules/local/deviation_flags/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
@@ -54,6 +57,31 @@ workflow GUTPORTRAIT {
     //
     TAXON_PERCENTILES (
         COLLAPSE_GENUS.out.counts,
+        ch_samplesheet
+    )
+
+    //
+    // STAGE 3 - INTEGRATE, diagnosis only: how much of the panel's variation is study, and
+    // how much is each metadata variable. Correction and the two gates come with BATCH_CORRECT.
+    //
+    BATCH_DIAGNOSE (
+        COLLAPSE_GENUS.out.counts,
+        ch_samplesheet
+    )
+
+    //
+    // STAGE 4 - POSITION: alpha diversity at one fixed depth for every sample
+    //
+    ALPHA_DIVERSITY (
+        channel.of([ [ id: arm ], asv_table ]),
+        ch_samplesheet
+    )
+
+    //
+    // STAGE 5 - DEVIATE: extremes-only flags. Provisional until both arms agree.
+    //
+    DEVIATION_FLAGS (
+        channel.of([ [ id: arm ], asv_table, taxonomy ]).join(ALPHA_DIVERSITY.out.alpha),
         ch_samplesheet
     )
 
