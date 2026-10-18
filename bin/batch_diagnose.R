@@ -82,7 +82,16 @@ for (v in intersect(c("age_cat", "sex", "bmi_cat", "country"), colnames(panel)))
         next
     }
     d <- sub_dist(keep)
-    if (length(unique(sub$study)) >= 2) {
+    # Collinear with study: every level of the variable belongs to exactly one study and
+    # every study to one level (e.g. country when each study is from one country). The
+    # marginal test is then undefined (df 0); the variable cannot be separated from study.
+    n_pairs <- nrow(unique(sub[, c("study", v)]))
+    collinear <- n_pairs == length(unique(sub$study)) && n_pairs == length(unique(sub[[v]]))
+    if (collinear) {
+        a <- fit(as.formula(paste("d ~", v)), sub, "terms")
+        add(v, v, a[v, "Df"], a[v, "R2"], a[v, "F"], a[v, "Pr(>F)"], length(keep),
+            sprintf("confounded: %s is collinear with study (one level per study)", v))
+    } else if (length(unique(sub$study)) >= 2) {
         a <- fit(as.formula(paste("d ~ study +", v)), sub, "margin")
         for (term in c("study", v)) {
             add(paste("study +", v), term, a[term, "Df"], a[term, "R2"], a[term, "F"], a[term, "Pr(>F)"],

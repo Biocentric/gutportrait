@@ -38,5 +38,45 @@
             "nf-test": "0.9.5",
             "nextflow": "26.04.3"
         }
+    },
+    "a contrast collinear with study is orientation only": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "native"
+                    },
+                    "native.gates.tsv:md5,f1f2f61c95d7f6a38c05d798cb39742f"
+                ]
+            ],
+            {
+                "versions_numpy": [
+                    [
+                        "BATCH_DOMINANCE",
+                        "numpy",
+                        "1.26.4"
+                    ]
+                ],
+                "versions_pandas": [
+                    [
+                        "BATCH_DOMINANCE",
+                        "pandas",
+                        "2.2.1"
+                    ]
+                ],
+                "versions_python": [
+                    [
+                        "BATCH_DOMINANCE",
+                        "python",
+                        "3.12.3"
+                    ]
+                ]
+            }
+        ],
+        "timestamp": "2026-10-18T14:58:42.30719952",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.04.3"
+        }
     }
 }

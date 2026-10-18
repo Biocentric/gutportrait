@@ -180,6 +180,19 @@ def main():
         for s in samples:
             w.writerow(list(s) + ['synthetic timepoint %s' % s[0][-1] if s[1] == 'personal' else ''])
 
+    # The same sheet with country collinear with study (A = Germany, B = Austria), the shape
+    # of a real panel where every study comes from one country. Tests that the batch models
+    # report such a variable as confounded instead of failing on an undefined test.
+    country_of = {'STUDY_A': 'Germany', 'STUDY_B': 'Austria'}
+    with open(os.path.join(OUT, 'samplesheet_collinear.csv'), 'w', newline='\n') as fh:
+        w = csv.writer(fh, lineterminator='\n')
+        w.writerow(['sample', 'role', 'study', 'run', 'age_cat', 'sex', 'bmi_cat', 'country', 'context'])
+        for s in samples:
+            row = list(s) + ['synthetic timepoint %s' % s[0][-1] if s[1] == 'personal' else '']
+            if s[1] == 'panel':
+                row[7] = country_of.get(s[2], '')
+            w.writerow(row)
+
     print('wrote %d ASVs x %d samples to %s' % (len(asvs), len(samples), OUT))
 
 

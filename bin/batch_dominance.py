@@ -60,19 +60,32 @@ def main(argv=None):
             % ('exceeds' if str(summ['study_banner']).upper() == 'TRUE' else 'is below',
                'orientation only' if str(summ['study_banner']).upper() == 'TRUE' else 'not demoted by it'))
 
+    def num(x):
+        """A statistic as float, or None when PERMANOVA could not produce one (NA)."""
+        try:
+            v = float(x)
+        except (TypeError, ValueError):
+            return None
+        return v if np.isfinite(v) else None
+
     for model, sub in perm[perm['model'].str.startswith('study + ') | ~perm['model'].isin(['study'])].groupby('model'):
         v = model.replace('study + ', '')
         mine = sub[sub['term'] == v]
-        if mine.empty or mine.iloc[0]['R2'] == '':
-            add('contrast:' + v, 'not_testable', '', '', mine.iloc[0]['note'] if not mine.empty else '')
+        r2v = num(mine.iloc[0]['R2']) if not mine.empty else None
+        pv = num(mine.iloc[0]['p']) if not mine.empty else None
+        if r2v is None or pv is None:
+            add('contrast:' + v, 'not_testable', '', '',
+                (mine.iloc[0]['note'] if not mine.empty else '') or 'no test statistic (NA)')
             continue
-        r2v, pv = float(mine.iloc[0]['R2']), float(mine.iloc[0]['p'])
         st = sub[sub['term'] == 'study']
         if 'confounded' in str(mine.iloc[0]['note']) or st.empty:
             add('contrast:' + v, 'orientation_only', r2v, 'R2(%s) > R2(study)' % v,
                 'not separable from study: %s' % mine.iloc[0]['note'])
             continue
-        r2st = float(st.iloc[0]['R2'])
+        r2st = num(st.iloc[0]['R2'])
+        if r2st is None:
+            add('contrast:' + v, 'not_testable', r2v, '', 'R2(study) not estimable in this model')
+            continue
         finding = r2v > r2st and pv < a.alpha
         add('contrast:' + v, 'finding' if finding else 'orientation_only', r2v, 'R2(%s) > R2(study)' % v,
             'R2(%s) = %.4f (p = %.3g) vs R2(study) = %.4f' % (v, r2v, pv, r2st))
