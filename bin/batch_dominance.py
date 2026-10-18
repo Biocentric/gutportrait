@@ -8,11 +8,19 @@ study_banner           R2(study) in the panel above the banner threshold (from B
                        every population-facing claim is orientation only, said at the top.
 contrast:<variable>    a lifestyle or metadata contrast counts as a finding only if its
                        marginal R2 exceeds R2(study) in the same model and p < --alpha.
-personal_positioning   the personal samples' centroid must lie further from the pooled panel
-                       centroid than the furthest panel STUDY centroid does. Otherwise the
-                       personal deviation is "within between-study spread": a lab or cohort
-                       difference of that size is ordinary, so it cannot be read as biology.
-                       Needs at least two panel studies; with one, it is not assessable.
+personal_positioning   is a personal sample further from the pooled panel centroid than an
+                       ORDINARY person in a lab- or cohort-SHIFTED study could be? By the
+                       triangle inequality, a person within the 95th percentile of their own
+                       study's spread (q95 of within-study distances), in a study whose centroid
+                       is shifted by at most the largest shift seen in the panel (D_max), lies at
+                       most q95 + D_max from the pooled centroid. Only a sample beyond that bound
+                       is "interpretable"; otherwise it is within individual plus between-study
+                       spread, and its deviation cannot be read as biology. Needs at least two
+                       panel studies; with one, it is not assessable.
+
+                       (An earlier version compared the personal centroid with the study
+                       centroids directly. That compared one person with group averages, which
+                       always sit close together, so nearly everyone came out "interpretable".)
 
 Distances are Aitchison (Euclidean on CLR genus profiles, panel-only prevalence filter and
 the same pseudocount as everywhere else).
@@ -102,22 +110,32 @@ def main(argv=None):
         add('personal_positioning', 'not_assessable', '', '',
             'needs at least two panel studies of >= %d samples to measure between-study spread' % a.min_study_n)
     else:
-        study_dist = {s: float(np.linalg.norm(clr[[i for i in panel_ids if sheet.at[i, 'study'] == s]].mean(axis=1) - pooled))
-                      for s in studies}
-        spread = max(study_dist.values())
-        personal_dist = float(np.linalg.norm(clr[personal_ids].mean(axis=1) - pooled))
-        add('personal_positioning', 'interpretable' if personal_dist > spread else 'within_between_study_spread',
-            round(personal_dist, 3), 'largest study-centroid distance %.3f' % spread,
-            'study-centroid distances: ' + ', '.join('%s %.3f' % kv for kv in sorted(study_dist.items())))
+        shift, within = {}, []
+        for s in studies:
+            members = [i for i in panel_ids if sheet.at[i, 'study'] == s]
+            centre = clr[members].mean(axis=1)
+            shift[s] = float(np.linalg.norm(centre - pooled))
+            within += list(np.sqrt(((clr[members].sub(centre, axis=0)) ** 2).sum(axis=0)))
+        d_max, q95 = max(shift.values()), float(np.percentile(within, 95))
+        bound = q95 + d_max
+        detail = ('bound = q95 within-study distance %.3f + largest study shift %.3f (%s)'
+                  % (q95, d_max, ', '.join('%s %.3f' % kv for kv in sorted(shift.items()))))
+        verdicts = []
         for sid in personal_ids:
             d = float(np.linalg.norm(clr[sid] - pooled))
-            add('personal_distance:%s' % sid, 'info', round(d, 3), '', sheet.at[sid, 'context'] if 'context' in sheet.columns else '')
+            ok = d > bound
+            verdicts.append(ok)
+            ctx = sheet.at[sid, 'context'] if 'context' in sheet.columns else ''
+            add('personal_positioning:%s' % sid, 'interpretable' if ok else 'within_spread', round(d, 3),
+                '%.3f' % bound, ('%s; ' % ctx if ctx else '') + detail)
+        overall = ('interpretable' if all(verdicts) else 'within_spread' if not any(verdicts)
+                   else 'mixed: %d of %d samples interpretable' % (sum(verdicts), len(verdicts)))
+        add('personal_positioning', overall, '', '%.3f' % bound, detail)
 
     out = pd.DataFrame(rows)
     out.to_csv('%s.gates.tsv' % a.prefix, sep='\t', index=False)
     for _, r in out.iterrows():
-        if not r['gate'].startswith('personal_distance'):
-            print('%-24s %-28s %s' % (r['gate'], r['status'], r['detail']))
+        print('%-36s %-28s %s' % (r['gate'], r['status'], r['value']))
 
 
 if __name__ == '__main__':

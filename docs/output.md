@@ -182,15 +182,19 @@ the run stops**: a correction that erases an effect planted on purpose would era
 
 **Batch dominance** (`gates.tsv`):
 
-| Gate                         | Meaning                                                                                                                                                             |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `study_banner`               | `BANNER` when R²(study) exceeds `--banner_r2_study`: every population-facing claim is orientation only                                                              |
-| `contrast:<variable>`        | `finding` only if the variable's R² exceeds R²(study) in the same model and p < `--dominance_alpha`; otherwise `orientation_only` or `not_testable`                 |
-| `personal_positioning`       | `interpretable` only if the personal samples' centroid lies further from the pooled panel than the furthest study centroid; otherwise `within_between_study_spread` |
-| `personal_distance:<sample>` | each personal sample's Aitchison distance to the pooled panel centroid, for reference                                                                               |
+| Gate                            | Meaning                                                                                                                                                                               |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `study_banner`                  | `BANNER` when R²(study) exceeds `--banner_r2_study`: every population-facing claim is orientation only                                                                                |
+| `contrast:<variable>`           | `finding` only if the variable's R² exceeds R²(study) in the same model and p < `--dominance_alpha`; otherwise `orientation_only` or `not_testable`                                   |
+| `personal_positioning:<sample>` | `interpretable` only if the sample lies further from the pooled panel centroid than q95 of within-study distances plus the largest study shift (see below); otherwise `within_spread` |
+| `personal_positioning`          | the summary over the personal samples: `interpretable`, `within_spread` or `mixed`                                                                                                    |
 
-`personal_positioning` needs at least two panel studies with `--min_study_n` samples each;
-with fewer, between-study spread cannot be measured and the gate is `not_assessable`.
+Why that bound: by the triangle inequality, an ordinary person (within the 95th percentile of
+their own study's spread) in a study whose centroid is shifted by at most the largest shift
+seen in the panel lies at most q95 + that shift from the pooled centroid. A personal sample
+beyond the bound cannot be explained as an ordinary person measured in a shifted lab or
+cohort; one within it can, so its deviation is not read as biology. The gate needs at least
+two panel studies with `--min_study_n` samples each; with fewer, it is `not_assessable`.
 
 ### Alpha diversity
 
